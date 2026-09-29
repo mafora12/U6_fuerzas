@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dos que bailan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="escena"></canvas>
+
+  <!--
+    MÚSICA: pon tu interpretación en la carpeta assets/ con el nombre "musica"
+    (musica.mp3, musica.m4a, musica.wav o musica.ogg). El navegador usa el primero que encuentre.
+    Enter = reproducir / pausar · R = volver al inicio.
+  -->
+  <audio id="musica" preload="auto">
+    <source src="assets/musica.mp3" type="audio/mpeg">
+    <source src="assets/musica.m4a" type="audio/mp4">
+    <source src="assets/musica.wav" type="audio/wav">
+    <source src="assets/musica.ogg" type="audio/ogg">
+  </audio>
+
+  <div id="inicio">
+    <h1>Dos que bailan</h1>
+    <p class="sub">Un vals con agentes autónomos · <em>Victor's Piano Solo</em></p>
+    <ul>
+      <li><kbd>Espacio</kbd> el “1” del compás: una vuelta más fuerte</li>
+      <li><kbd>↑</kbd> <kbd>↓</kbd> abrazo: acercarse / soltarse</li>
+      <li><kbd>←</kbd> <kbd>→</kbd> tempo del vals</li>
+      <li><kbd>Mouse</kbd> la luz del salón: hacia donde los llevas</li>
+      <li><kbd>E</kbd> Emily aparece / se desvanece</li>
+      <li><kbd>Tab</kbd> noche azul ↔ salón dorado</li>
+      <li><kbd>Enter</kbd> música · <kbd>R</kbd> reiniciar música</li>
+      <li><kbd>F</kbd> pantalla completa · <kbd>H</kbd> score · <kbd>D</kbd> ver percepción</li>
+    </ul>
+    <p class="empezar">Presiona cualquier tecla para entrar</p>
+  </div>
+
+  <div id="hud" class="oculto"></div>
+  <div id="aviso"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
