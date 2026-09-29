@@ -271,7 +271,7 @@ export class Renderer {
     ctx.restore();
   }
 
-  // Tecla D: lo que cada agente percibe y lo que está buscando.
+  // Tecla V: lo que cada agente percibe y lo que está buscando.
   _debug(st, couple, pr) {
     const { ctx } = this;
     const { victor: v, emily: e } = couple;

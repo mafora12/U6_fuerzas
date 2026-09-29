@@ -8,6 +8,8 @@ export const state = {
   mundo: 0,           // 0 = noche azul · 1 = salón dorado
   mundoTarget: 0,     // Tab
   pulse: 0,           // impulso del último "1" del compás (Espacio), decae solo
+  release: 0,         // 0 = abrazados · 1 = sueltos (mientras se sostiene Q)
+  releaseHeld: false,
   taps: [],
   compases: 0,
   light: { x: 0, y: 0 },        // la luz del salón (sigue al mouse con retraso)
@@ -19,6 +21,7 @@ export function easeState(dt) {
   state.emily += (state.emilyTarget - state.emily) * (1 - Math.exp(-dt * 0.6));
   state.mundo += (state.mundoTarget - state.mundo) * (1 - Math.exp(-dt * 0.35));
   state.pulse *= Math.exp(-dt * 1.8);
+  state.release += ((state.releaseHeld ? 1 : 0) - state.release) * (1 - Math.exp(-dt * 2));
   const k = 1 - Math.exp(-dt * 1.2);
   state.light.x += (state.lightTarget.x - state.light.x) * k;
   state.light.y += (state.lightTarget.y - state.light.y) * k;

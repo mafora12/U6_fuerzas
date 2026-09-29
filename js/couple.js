@@ -45,6 +45,15 @@ export class Dancer {
     this.steer((dx / d) * p.maxSpeed, (dy / d) * p.maxSpeed, w, p);
   }
 
+  // FLEE: alejarse de otro agente (lo contrario de seek), solo si está cerca.
+  flee(o, w, p) {
+    if (w <= 0) return;
+    const dx = this.x - o.x, dy = this.y - o.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 1e-6 || d > 0.5) return;
+    this.steer((dx / d) * p.maxSpeed, (dy / d) * p.maxSpeed, w, p);
+  }
+
   // GIRAR CON LA PAREJA (seek a un punto desplazado): mira dónde está el otro y busca
   // el punto que queda a la distancia del abrazo, pero un ángulo "turn" más adelante
   // alrededor de él. Es un paso de lado alrededor de la pareja.
@@ -114,8 +123,9 @@ export function params(st) {
     minSpeed: 0.55 * maxSpeed,
     // En el salón dorado los giros son más amplios; en la noche, más cerrados.
     maxForce: maxSpeed * lerp(0.14, 0.08, st.mundo),
-    ideal: lerp(0.36, 0.08, st.abrazo),        // distancia de abrazo
-    perception: lerp(0.5, 1.6, st.abrazo),     // hasta dónde se perciben
+    // Distancia de abrazo. Al soltarse (Q) la distancia deseada crece: se abren.
+    ideal: lerp(0.36, 0.08, st.abrazo) + 0.45 * st.release,
+    perception: lerp(0.5, 1.6, st.abrazo) + 0.5 * st.release,   // hasta dónde se perciben
     turn: 0.5 + 0.5 * st.pulse,                // cuánto adelanta el paso alrededor de la pareja
   };
 }
@@ -138,14 +148,18 @@ export class Couple {
     for (const [me, other, presence] of [[v, e, 1], [e, v, st.emily]]) {
       me.target = null;
       if (me.sees) {
-        me.turnWith(other, p.ideal, p.turn, 1.4, p);
-        me.keepDistance(other, p.ideal, 0.8, p);
-        me.wander(0.25, p);
+        // Abrazados giran juntos; sueltos (Q) se alejan y cada uno baila solo.
+        me.turnWith(other, p.ideal, p.turn, 1.4 * (1 - st.release), p);
+        me.keepDistance(other, p.ideal, 0.8 + 0.6 * st.release, p);
+        me.flee(other, 0.9 * st.release, p);
+        me.wander(0.25 + 0.8 * st.release, p);
       } else {
         me.wander(0.9, p);
       }
       // La luz (mouse) los atrae suavemente: así la intérprete los lleva por el salón.
-      me.seek(st.light.x, st.light.y, 0.5 * presence, p);
+      // Más lejos la luz, más fuerte el llamado: así cruzan el salón sin dejar de bailar.
+      const lightD = Math.hypot(st.light.x - me.x, st.light.y - me.y);
+      me.seek(st.light.x, st.light.y, (0.5 + 1.2 * Math.min(1, lightD / 0.5)) * presence, p);
       // Paredes del salón.
       const r = Math.hypot(me.x, me.y);
       if (r > 0.8) me.seek(0, 0, (r - 0.8) * 12, p);

@@ -1,6 +1,7 @@
 import { state, tap } from './state.js';
 
-const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+// Teclas que se sostienen: flechas, WASD (mover la luz) y Q (soltarse).
+const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ'];
 const held = new Set();
 
 export function initControls({ toWorld, audio, hud, onStart }) {
@@ -44,7 +45,7 @@ export function initControls({ toWorld, audio, hud, onStart }) {
       case 'KeyH':
         hud.toggle();
         break;
-      case 'KeyD':
+      case 'KeyV':
         state.debug = !state.debug;
         break;
     }
@@ -72,4 +73,17 @@ export function updateHeld(dt) {
   if (held.has('ArrowDown')) state.abrazo = clamp(state.abrazo - r);
   if (held.has('ArrowRight')) state.tempo = clamp(state.tempo + r);
   if (held.has('ArrowLeft')) state.tempo = clamp(state.tempo - r);
+
+  // WASD: la luz recorre el salón y la pareja la sigue bailando.
+  const m = 0.55 * dt;
+  const L = state.lightTarget;
+  if (held.has('KeyW')) L.y -= m;
+  if (held.has('KeyS')) L.y += m;
+  if (held.has('KeyA')) L.x -= m;
+  if (held.has('KeyD')) L.x += m;
+  const lr = Math.hypot(L.x, L.y);
+  if (lr > 0.7) { L.x *= 0.7 / lr; L.y *= 0.7 / lr; }
+
+  // Q sostenida: se sueltan. Al soltar la tecla, vuelven a buscarse.
+  state.releaseHeld = held.has('KeyQ');
 }
