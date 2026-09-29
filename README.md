@@ -9,7 +9,7 @@ Unidad 6 · Simulación · capítulo 5 de *The Nature of Code*.
 
 ## Cómo verlo
 
-- **En línea (GitHub Pages):** Settings → Pages → *Deploy from a branch* → `main` / `root`. Queda en `https://mafora12.github.io/U6_fuerzas/`.
+- **En línea (GitHub Pages con GitHub Actions):** el flujo [.github/workflows/pages.yml](.github/workflows/pages.yml) publica la página sola en cada push a `main`. Hay que activarlo una sola vez: Settings → Pages → *Build and deployment* → Source: **GitHub Actions**. Queda en `https://mafora12.github.io/U6_fuerzas/`, y cada publicación se ve en la pestaña **Actions**.
 - **En el computador:** los módulos de JavaScript necesitan un servidor local. Desde la carpeta del repo:
 
   ```bash
@@ -110,7 +110,7 @@ Con **V** se ven:
 
 | El encargo pide… | Cómo lo cumple | Dónde verlo |
 |---|---|---|
-| Un instrumento visual **para la Web** | Página HTML + JavaScript sin dependencias, publicable en GitHub Pages | [index.html](index.html) |
+| Un instrumento visual **para la Web** | Página HTML + JavaScript sin dependencias, publicada en GitHub Pages con GitHub Actions | [index.html](index.html), [pages.yml](.github/workflows/pages.yml) |
 | Interpretar **en tiempo real** una pieza elegida | La simulación corre a 60 pasos por segundo mientras suena la interpretación propia de *Victor's Piano Solo* | [js/main.js](js/main.js), `assets/musica.mp3` |
 | **Pantalla completa** para la presentación | Tecla **F** | [js/controls.js](js/controls.js) |
 | Usar **solo** steering, flocking, flow fields o Physarum | Solo steering behaviors de Reynolds: seek, flee, arrive, wander, path following y seek a un punto desplazado | [js/couple.js](js/couple.js) |
