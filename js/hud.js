@@ -1,17 +1,31 @@
-import { SCORE, sectionAt } from './score.js';
+// Mini ventana (tecla H) que recuerda los controles durante la presentación.
+const CONTROLES = [
+  ['Espacio', 'el “1” del compás'],
+  ['↑ ↓', 'abrazo'],
+  ['← →', 'tempo'],
+  ['W A S D', 'llevarlos por el salón'],
+  ['Mouse', 'la luz del salón'],
+  ['Q', 'sostener: se sueltan'],
+  ['E', 'Emily aparece / se va'],
+  ['Tab', 'noche ↔ salón dorado'],
+  ['Enter', 'música'],
+  ['R', 'reiniciar música'],
+  ['F', 'pantalla completa'],
+  ['H', 'mostrar / ocultar'],
+];
 
-const fmt = (s) => {
-  s = Math.max(0, s | 0);
-  return `${(s / 60) | 0}:${String(s % 60).padStart(2, '0')}`;
-};
-
-// Panel de guía (tecla H): tiempo de la música, pasaje del score y estado de los controles.
 export class Hud {
   constructor() {
     this.el = document.getElementById('hud');
     this.aviso = document.getElementById('aviso');
-    this.next = 0;
     this.avisoTimer = 0;
+    this.musicaOk = null;
+    this.el.innerHTML = `
+      <div class="titulo">Controles</div>
+      <dl>${CONTROLES.map(([k, d]) => `<dt><kbd>${k}</kbd></dt><dd>${d}</dd>`).join('')}</dl>
+      <div class="nota" hidden>Falta la música: assets/musica.mp3</div>
+    `;
+    this.nota = this.el.querySelector('.nota');
   }
 
   toggle() {
@@ -25,32 +39,10 @@ export class Hud {
     this.avisoTimer = setTimeout(() => this.aviso.classList.remove('visible'), secs * 1000);
   }
 
+  // Solo actualiza el aviso de la música cuando cambia.
   update(st, audio, musicaOk) {
-    const now = performance.now();
-    if (this.el.classList.contains('oculto') || now < this.next) return;
-    this.next = now + 100;
-
-    const time = audio.currentTime || 0;
-    const k = sectionAt(time);
-    const sec = SCORE[k];
-    const sig = SCORE[k + 1];
-    const bar = (v) => `<div class="barra"><i style="width:${Math.round(v * 100)}%"></i></div>`;
-
-    this.el.innerHTML = `
-      <div class="tiempo">${fmt(time)}${audio.paused ? ' · pausa' : ''}</div>
-      ${musicaOk ? '' : '<div class="nota">Falta la música: assets/musica.mp3</div>'}
-      <div class="seccion">${sec.titulo}</div>
-      <div class="nota">${sec.musica}</div>
-      <div>${sec.hacer}</div>
-      ${sig ? `<div class="siguiente">En ${fmt(sig.t - time)}: ${sig.titulo}</div>` : ''}
-      <div class="barras">
-        <span>abrazo</span>${bar(st.abrazo)}
-        <span>tempo</span>${bar(st.tempo)}
-        <span>Emily</span>${bar(st.emily)}
-        <span>salón</span>${bar(st.mundo)}
-        <span>paso</span>${bar(Math.min(1, st.pulse))}
-      </div>
-      <div class="siguiente">${st.compases ? `${st.compases.toFixed(0)} compases/min` : 'Espacio en el 1 del compás'}</div>
-    `;
+    if (musicaOk === this.musicaOk) return;
+    this.musicaOk = musicaOk;
+    this.nota.hidden = musicaOk;
   }
 }

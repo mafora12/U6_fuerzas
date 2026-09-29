@@ -14,7 +14,6 @@ export const state = {
   compases: 0,
   light: { x: 0, y: 0 },        // la luz del salón (sigue al mouse con retraso)
   lightTarget: { x: 0, y: 0 },
-  debug: false,
 };
 
 export function easeState(dt) {

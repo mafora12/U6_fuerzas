@@ -32,7 +32,7 @@ Unidad 6 · Simulación · capítulo 5 de *The Nature of Code*.
 | **E** | Presencia de Emily | Si se va, dejan de percibirse y Victor sigue sus huellas (path following) |
 | **Tab** | Noche azul ↔ salón dorado | Paleta, y fuerza máxima de giro: en el salón, vueltas más amplias |
 | Enter / R | Música | Reproducir-pausar / volver al inicio |
-| F / H / V | Utilidades | Pantalla completa / panel con el score / ver la percepción |
+| F / H | Utilidades | Pantalla completa / mini ventana que recuerda los controles |
 
 ## El sistema
 
@@ -83,15 +83,9 @@ La rotación más el desplazamiento es un vals, y la huella en el piso lo muestr
 | 2:28–2:40 | Sube, dramático | Clímax | Soltar Q: se reencuentran, abrazo y tempo al máximo, taps |
 | 2:40–fin | Tranquila y grave | Final | **Tab** a la noche, **E**: Emily se va y Victor sigue sus huellas |
 
-El panel (**H**) muestra el pasaje actual como guía. **No cambia nada solo**: todas las decisiones se toman en vivo, escuchando.
+El score es la guía de la intérprete. El programa **no lo sigue solo**: todas las decisiones se toman en vivo, escuchando.
 
-## Predicciones para verificar (tecla V)
-
-Con **V** se ven:
-- el radio de percepción de Victor (verde = percibe a Emily, rojo = no),
-- la distancia de abrazo alrededor de Emily,
-- la velocidad de cada uno,
-- el punto que cada uno está buscando (✕).
+## Predicciones para verificar
 
 | Si cambio… | Predigo… | Medido en simulación |
 |---|---|---|
@@ -114,19 +108,19 @@ Con **V** se ven:
 | Interpretar **en tiempo real** una pieza elegida | La simulación corre a 60 pasos por segundo mientras suena la interpretación propia de *Victor's Piano Solo* | [js/main.js](js/main.js), `assets/musica.mp3` |
 | **Pantalla completa** para la presentación | Tecla **F** | [js/controls.js](js/controls.js) |
 | Usar **solo** steering, flocking, flow fields o Physarum | Solo steering behaviors de Reynolds: seek, flee, arrive, wander, path following y seek a un punto desplazado | [js/couple.js](js/couple.js) |
-| Definir **qué perciben** los agentes y **sus límites** | Cada uno percibe a su pareja solo dentro de un radio que depende del abrazo, la luz y la pared. Victor percibe las huellas de Emily solo cuando ella no está | sección *Qué percibe cada agente*; tecla **V** |
+| Definir **qué perciben** los agentes y **sus límites** | Cada uno percibe a su pareja solo dentro de un radio que depende del abrazo, la luz y la pared. Victor percibe las huellas de Emily solo cuando ella no está | sección *Qué percibe cada agente*; en pantalla, las manos se toman solo cuando se perciben y están cerca |
 | Definir **cómo calculan sus acciones** | Suma ponderada de fuerzas de steering, `fuerza = deseada − actual`, limitada | sección *Cómo calcula su acción* |
 | **Comportamiento emergente** y explicar qué aporta la combinación | El giro de la pareja no está programado: sale de que los dos dan un paso de lado alrededor del otro a la vez. Girar + seguir la luz = vals que recorre el salón | sección *Qué emerge*; huella en espiral en el piso |
 | **Pocos controles expresivos** sobre percepción, reglas o entorno | Percepción: abrazo, E. Reglas: tempo, Q, tap. Entorno: luz (WASD/mouse), Tab | tabla *Controles* |
 | **Consecuencias perceptibles** de cada control | Cada control cambia algo medible: distancia, vueltas, recorrido, percepción | tabla *Predicciones* |
-| La **interpretación humana** conduce, **sin** secuencia automática **ni análisis del audio** | El programa no escucha el audio ni cambia nada según el tiempo. El score solo se muestra como guía; cada cambio lo hace la intérprete con el teclado | [js/score.js](js/score.js) (solo texto) |
-| Un **score visual** que relacione pasajes, intenciones e intervenciones | Tabla con los tiempos marcados escuchando la pieza, también visible en vivo con **H** | sección *Score visual* |
+| La **interpretación humana** conduce, **sin** secuencia automática **ni análisis del audio** | El programa no escucha el audio ni cambia nada según el tiempo. Cada cambio lo hace la intérprete con el teclado; la tecla **H** solo le recuerda los controles | [js/controls.js](js/controls.js) |
+| Un **score visual** que relacione pasajes, intenciones e intervenciones | Tabla con los tiempos marcados escuchando la pieza | sección *Score visual* |
 | **Bitácora** con experimentos, decisiones y pruebas | Este README: versiones descartadas, reglas probadas y medidas | sección *Bitácora* |
 
 ### Los cuatro criterios de la autoevaluación
 
 1. **Cumplimiento del encargo.** Es tecnología web (HTML + Canvas + JavaScript), corre en tiempo real a pantalla completa y tiene la música integrada en la página. Evidencia: la página en GitHub Pages y el video del ensayo *(por agregar)*.
-2. **Comprensión y verificación.** Cada regla está en un método corto y comentado de `couple.js`. La tecla **V** muestra en vivo qué percibe cada agente y qué punto busca. La tabla *Predicciones* dice qué pasa al cambiar cada parámetro, y cada predicción se midió en simulación antes de probarla en pantalla.
+2. **Comprensión y verificación.** Cada regla está en un método corto y comentado de `couple.js`. En pantalla la percepción se nota: cuando se perciben y están cerca se toman de las manos; si no, cada uno deambula. La tabla *Predicciones* dice qué pasa al cambiar cada parámetro, y cada predicción se midió en simulación antes de probarla en pantalla.
 3. **Diseño e intención.** Se eligió steering porque un vals es entre dos individuos. Cada regla tiene un sentido en la historia:
    - girar con la pareja = bailar juntos,
    - arrive = el abrazo,

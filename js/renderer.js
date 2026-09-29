@@ -1,5 +1,6 @@
 import { rgba } from './palette.js';
 import { params } from './couple.js';
+import { Rain } from './rain.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -11,11 +12,7 @@ export class Renderer {
     this.ctx = canvas.getContext('2d');
     this.paint = document.createElement('canvas');   // la huella del baile en el piso
     this.pctx = this.paint.getContext('2d');
-    this.streaks = Array.from({ length: 90 }, () => ({
-      x: Math.random(), y: Math.random() * 0.62,
-      len: 0.02 + Math.random() * 0.07, a: 0.04 + Math.random() * 0.12,
-      w: 1 + Math.random() * 3, ph: Math.random() * 6.28,
-    }));
+    this.rain = new Rain();   // lluvia de luz que sigue un flow field
     this.last = new Map();
     this.resize();
     addEventListener('resize', () => this.resize());
@@ -81,16 +78,8 @@ export class Renderer {
     ctx.fillStyle = core;
     ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
 
-    ctx.lineCap = 'round';
-    for (const s of this.streaks) {
-      const a = s.a * (0.55 + 0.45 * Math.sin(t * 0.8 + s.ph));
-      ctx.strokeStyle = rgba(pal.streak, a);
-      ctx.lineWidth = s.w;
-      ctx.beginPath();
-      ctx.moveTo(s.x * W, s.y * H);
-      ctx.lineTo(s.x * W, (s.y + s.len) * H);
-      ctx.stroke();
-    }
+    this.rain.update(W, H, t);
+    this.rain.draw(ctx, pal, this.horizon);
 
     // ---- 3. La huella del baile en el piso (se borra despacio) ----
     const p = this.pctx;
@@ -138,8 +127,6 @@ export class Renderer {
     const pr = params(st);
     const dist = Math.hypot(e.x - v.x, e.y - v.y);
     if (v.sees && dist < pr.ideal * 1.8 && ea > 0.3) this._hold(v, e, pal, ea);
-
-    if (st.debug) this._debug(st, couple, pr);
   }
 
   // Dibuja una figura (o su reflejo) de pie sobre su punto del piso.
@@ -268,47 +255,6 @@ export class Renderer {
     ctx.moveTo(ax, ay + 8);
     ctx.quadraticCurveTo((ax + wx) / 2, (ay + wy) / 2 + 12, wx, wy);
     ctx.stroke();
-    ctx.restore();
-  }
-
-  // Tecla V: lo que cada agente percibe y lo que está buscando.
-  _debug(st, couple, pr) {
-    const { ctx } = this;
-    const { victor: v, emily: e } = couple;
-    ctx.save();
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.lineWidth = 1.5;
-    ctx.font = '14px Georgia, serif';
-    const ellipse = (x, y, r, color, dash = []) => {
-      const [sx, sy] = this.toScreen(x, y);
-      ctx.setLineDash(dash);
-      ctx.strokeStyle = color;
-      ctx.beginPath();
-      ctx.ellipse(sx, sy, r * this.rx, r * this.ry, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    };
-    ellipse(0, 0, 0.8, 'rgba(255,255,255,0.25)', [4, 6]);                         // paredes
-    ellipse(v.x, v.y, pr.perception, v.sees ? '#66ff99' : '#ff5566');             // percepción
-    if (st.emily > 0.3) ellipse(e.x, e.y, pr.ideal, 'rgba(255,255,255,0.6)', [3, 4]); // distancia de abrazo
-    ctx.setLineDash([]);
-    for (const d of [v, e]) {
-      const [sx, sy] = this.toScreen(d.x, d.y);
-      // velocidad
-      ctx.strokeStyle = '#ffffff';
-      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + d.vx * this.rx * 12, sy + d.vy * this.ry * 12); ctx.stroke();
-      // punto que busca
-      if (d.target) {
-        const [tx, ty] = this.toScreen(d.target[0], d.target[1]);
-        ctx.strokeStyle = '#ffd966';
-        ctx.beginPath(); ctx.moveTo(tx - 6, ty - 6); ctx.lineTo(tx + 6, ty + 6); ctx.moveTo(tx + 6, ty - 6); ctx.lineTo(tx - 6, ty + 6); ctx.stroke();
-        ctx.setLineDash([2, 4]);
-        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(tx, ty); ctx.stroke();
-        ctx.setLineDash([]);
-      }
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(d.name, sx + 10, sy + 18);
-    }
-    ctx.fillText(v.sees ? 'se perciben' : 'no se perciben', 16, 28);
     ctx.restore();
   }
 }

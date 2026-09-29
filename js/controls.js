@@ -45,9 +45,6 @@ export function initControls({ toWorld, audio, hud, onStart }) {
       case 'KeyH':
         hud.toggle();
         break;
-      case 'KeyV':
-        state.debug = !state.debug;
-        break;
     }
   });
 
