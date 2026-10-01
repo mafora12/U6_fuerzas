@@ -1,232 +1,485 @@
 # Dos que bailan
 
-Instrumento visual para interpretar en vivo **Victor's Piano Solo** (*El cadáver de la novia*, Danny Elfman) con agentes autónomos.
-Unidad 6 · Simulación · capítulo 5 de *The Nature of Code*.
+**Instrumento visual para interpretar en vivo *Victor's Piano Solo* de *El cadáver de la novia*, de Danny Elfman, usando agentes autónomos.**
 
-> El movimiento es **siempre un vals entre dos**: Victor y Emily. No hay coreografía programada. Se abrazan y giran, recorren el salón, se sueltan y se vuelven a encontrar, y todo sale de las reglas de steering de cada uno.
+**Unidad 6 · Simulación · Capítulo 5 de *The Nature of Code***
 
-**Algoritmos usados:**
-- **Steering behaviors (Reynolds)** para el baile. Es el algoritmo que trabaja con individuos, y un vals es entre dos personas, así que cada bailarín es **un agente**.
-- **Flow field** para la luz que flota en el aire del fondo. El entorno cambia solo, y cada partícula lo sigue.
-- **Physarum** para la superficie de la luna: una red de venas de luz que se teje sola y late con cada tap.
+---
+
+## ¿De qué trata?
+
+La idea del proyecto es convertir la interpretación de una pieza musical en un baile que se construye en tiempo real.
+
+El movimiento está pensado como un **vals entre dos personas: Victor y Emily**. No hice una coreografía que diga exactamente dónde debe estar cada personaje. En cambio, cada uno funciona como un agente autónomo que toma decisiones a partir de lo que puede percibir del otro.
+
+Se abrazan, se separan, giran, recorren el salón y vuelven a encontrarse. Todo esto aparece a partir de las reglas de **steering** que tiene cada agente.
+
+Además del baile, el entorno también está construido con sistemas autónomos:
+
+* **Steering behaviors:** controlan el movimiento de Victor y Emily.
+* **Flow field:** controla las partículas de luz que flotan en el fondo.
+* **Physarum:** genera la red de luz de la luna.
+
+La intención es que la persona que interpreta la pieza pueda controlar algunos aspectos del sistema mientras escucha la música, sin que el programa analice automáticamente el audio.
+
+---
 
 ## Cómo verlo
 
-- **En línea (GitHub Pages con GitHub Actions):** el flujo [.github/workflows/pages.yml](.github/workflows/pages.yml) publica la página sola en cada push a `main`. Hay que activarlo una sola vez: Settings → Pages → *Build and deployment* → Source: **GitHub Actions**. Queda en `https://mafora12.github.io/U6_fuerzas/`, y cada publicación se ve en la pestaña **Actions**.
-- **En el computador:** los módulos de JavaScript necesitan un servidor local. Desde la carpeta del repo:
+### En línea
 
-  ```bash
-  python -m http.server 8000
-  ```
+[**Abrir la experiencia en GitHub Pages**](https://mafora12.github.io/U6_fuerzas/)
 
-  y abrir `http://localhost:8000`.
+### En el computador
 
-- **Música:** tu interpretación va en `assets/musica.mp3` (ver [assets/LEEME.md](assets/LEEME.md)).
+Los módulos de JavaScript necesitan ejecutarse desde un servidor local.
 
-## Controles
+Desde la carpeta del repositorio:
 
-| Control | Qué transforma | Consecuencia en el comportamiento |
-|---|---|---|
-| **W** | Figura: vals por el salón | Giran juntos y avanzan alrededor del salón por la línea de baile |
-| **A** | Figura: vuelta en el sitio | Giro más cerrado y rápido, sin desplazarse |
-| **S** | Figura: paseo lado a lado | Dejan de girar y caminan juntos copiando la dirección del otro (alignment) |
-| **D** | Figura: vals al revés | Giran hacia el otro lado y recorren el salón en sentido contrario |
-| **Q** (sostener) | Soltarse | Se alejan (flee), crece la distancia deseada y cada uno deambula solo. Al soltar Q se buscan y se vuelven a abrazar |
-| **Espacio** (tap) | El “1” del compás de 3/4 | Un empuje suave en la vuelta, una onda de luz en el piso y la luna late. Desde el segundo tap el compás sigue al tempo marcado: en el 1 se deslizan un poco más rápido y se elevan apenas (*rise & fall* suave) |
-| **↑ / ↓** (sostener) | Abrazo | Distancia de abrazo (0,36 → 0,08) y radio de percepción (0,5 → 1,6) |
-| **← / →** (sostener) | Tempo | Velocidad máxima: el vals gira más lento o más rápido |
-| **E** | Presencia de Emily | Si se va, dejan de percibirse y Victor sigue sus huellas (path following) |
-| **Tab** | Noche azul ↔ salón dorado | Paleta, y fuerza máxima de giro: en el salón, vueltas más amplias |
-| Enter | Música | Reproducir o pausar |
-| F / H | Utilidades | Pantalla completa / mini ventana que recuerda los controles |
+```bash
+python -m http.server 8000
+```
 
-## El sistema
+Después abrir:
 
-El comportamiento de los bailarines está en [js/couple.js](js/couple.js), la luz del aire en [js/rain.js](js/rain.js), la luna en [js/moon.js](js/moon.js) y el dibujo en [js/renderer.js](js/renderer.js).
+```text
+http://localhost:8000
+```
 
-### La luna: Physarum
+### Música
 
-La superficie de la luna es un mapa de rastro de 96×96 donde viven **2500 agentes Physarum**:
+La interpretación utilizada está en:
 
-- **Qué percibe cada agente:** el rastro en tres sensores a 5 px (adelante, 0,6 rad a la izquierda y a la derecha).
-- **Cómo actúa:** gira 0,35 rad hacia el sensor con más rastro, avanza, deposita, y no puede salir del disco.
-- **El mapa:** se difunde (3×3) y se evapora (×0,8) en cada cuadro.
-- **Cómo se ve:** solo se pintan las venas principales (el rastro claramente por encima del promedio del disco), en claro sobre un disco oscuro.
-- **Qué emerge:** ningún agente dibuja una vena, pero juntos tejen una **red de luz** que se transforma sola. Medido: las venas brillan más de 1000 veces que los huecos entre ellas.
-- **Control:** cada tap los acelera y hace que depositen más; el brillo de la red se multiplica por ~4, así que la luna late con el compás que marca la intérprete.
+`assets/musica.mp3`
 
-### La luz en el aire: flow field
+Para más información sobre el archivo de audio:
 
-Las partículas de luz del fondo, que evocan la lluvia de luz de la pintura azul, siguen un **flow field**:
+[Ver instrucciones de música](assets/LEEME.md)
 
-- **El campo:** una rejilla de celdas de 40 px sobre la pantalla. Un ruido suave que cambia con el tiempo decide la dirección de cada celda, en cualquier sentido, así que el campo forma **remolinos** que se transforman lentamente.
-- **La regla:** cada una de las 230 partículas es un agente que **solo percibe la celda donde está**. Toma esa dirección como velocidad deseada y gira hacia ella con steering: `fuerza = deseada − actual`, limitada. Además tiene una caída muy leve, como polvo de luz.
-- **Vida:** cada partícula vive de 3 a 8 s. Aparece y se desvanece poco a poco, y después renace en un punto al azar. Así la luz queda dispersa (opacidad entre 0,10 y 0,26).
-- El campo solo guarda direcciones; la regla con la que cada partícula lo consulta es aparte.
+---
 
-Medido en simulación: las partículas se mueven en todas las direcciones, a ~0,7 px por cuadro, y quedan repartidas por toda la pantalla.
+# Controles
 
-### Qué percibe cada agente (y sus límites)
+Los controles son pocos porque la idea es que puedan utilizarse mientras se escucha la música.
 
-- **A su pareja:** dónde está y hacia dónde va, **solo si está dentro de su radio de percepción** (depende del abrazo) y solo si Emily está presente. Si no la percibe, la busca deambulando.
-- **La pared:** si está a más de 0,8 del centro.
-- **Victor, cuando Emily no está:** el camino que ella dejó (sus últimos 600 pasos).
+| Control          | Qué cambia         | Qué pasa                                                                                    |
+| ---------------- | ------------------ | ------------------------------------------------------------------------------------------- |
+| **W**            | Vals por el salón  | Victor y Emily giran juntos y avanzan alrededor del salón.                                  |
+| **A**            | Vuelta en el sitio | El giro se vuelve más cerrado y rápido, sin desplazarse tanto.                              |
+| **S**            | Paseo lado a lado  | Dejan de girar y caminan juntos siguiendo la dirección del otro.                            |
+| **D**            | Vals al revés      | Giran hacia el otro lado y recorren el salón en sentido contrario.                          |
+| **Q** (sostener) | Soltarse           | Se alejan y cada uno empieza a deambular por separado.                                      |
+| **Espacio**      | Tap / pulso        | Marca el “1” del compás de 3/4, genera un pequeño impulso en el baile y hace latir la luna. |
+| **↑ / ↓**        | Abrazo             | Cambia la distancia entre los dos y su radio de percepción.                                 |
+| **← / →**        | Tempo              | Hace que el baile vaya más lento o más rápido.                                              |
+| **E**            | Presencia de Emily | Emily desaparece y Victor deja de percibirla. Entonces sigue las huellas que ella dejó.     |
+| **Tab**          | Ambiente           | Cambia entre la noche azul y el salón dorado.                                               |
+| **Enter**        | Música             | Reproduce o pausa la música.                                                                |
+| **F / H**        | Utilidades         | Pantalla completa / ventana con recordatorio de controles.                                  |
 
-### Cómo calcula su acción
+---
 
-Steering de Reynolds: `fuerza = velocidad deseada − velocidad actual`, limitada por `maxForce`. Cada cuadro suma:
+# El sistema
 
-| Comportamiento | Velocidad deseada | Peso |
-|---|---|---|
-| **Girar con la pareja** (seek a un punto desplazado) | Hacia el punto que está a la distancia del abrazo, un ángulo más adelante alrededor de la pareja | 1,4 × (1 − soltarse) |
-| **Arrive a una distancia** | Acercarse si está lejos del abrazo, alejarse si está cerca, frenando al llegar | 0,8 a 1,4 |
-| **Flee** | Alejarse de la pareja si está a menos de 0,5 | 0,9 × soltarse |
-| **Wander** | Punto al azar sobre un círculo al frente (más fuerte si no ve a la pareja o si están sueltos) | 0,25 a 1,05 |
-| **Línea de baile** (seek a un punto adelante sobre el anillo del salón) | Avanzar alrededor del salón, en un sentido (W) o el contrario (D) | 0,9 × peso de W o de D |
-| **Alignment** | La misma dirección de la pareja | 1,3 × peso de S |
-| **Seek al centro** | Hacia adentro, si está cerca de la pared | crece con la distancia |
-| **Path following** | Hacia un punto más adelante en las huellas de Emily | 1,3 × ausencia de Emily |
+Cada parte de la simulación está separada para que las reglas sean más fáciles de entender y modificar.
 
-Además, **nunca se detiene**: la velocidad está entre `minSpeed` y `maxSpeed`.
+* [Pareja y steering — `js/couple.js`](js/couple.js)
+* [Partículas y flow field — `js/rain.js`](js/rain.js)
+* [Luna y Physarum — `js/moon.js`](js/moon.js)
+* [Dibujo — `js/renderer.js`](js/renderer.js)
+* [Controles — `js/controls.js`](js/controls.js)
+* [Programa principal — `js/main.js`](js/main.js)
 
-### Qué emerge
+---
 
-Ninguna regla dice “la pareja gira”, ni hay un líder: los dos son iguales. Cada uno solo da un paso de lado alrededor de donde **percibe** al otro. Como los dos lo hacen a la vez, la pareja **rota sobre un centro común** que ninguno calcula. Según la figura elegida, además avanzan por el salón (W, D), giran en el sitio (A) o pasean juntos sin girar (S). Al cambiar de figura los pesos pasan de unos a otros en un par de segundos, así que el baile se transforma sin saltos.
+## La luna: Physarum
 
-La rotación más el desplazamiento es un vals, y la huella en el piso lo muestra en espirales. Al soltarse, las mismas reglas con otros pesos los separan. Al volver a percibirse, se reencuentran solos.
+La superficie de la luna está construida como un mapa de rastro de **96 × 96** en el que se mueven agentes Physarum.
 
-## Score visual
+Actualmente hay **2500 agentes** trabajando sobre este mapa.
 
-| Tiempo | Música | Intención | Intervención |
-|---|---|---|---|
-| 0:00–0:25 | Agudo, inicio | Victor solo en la noche | Noche azul, Emily ausente, tempo lento |
-| 0:25–0:30 | Pasa a grave | Algo aparece | **E**: Emily aparece lejos de Victor |
-| 0:30–0:56 | Variado, tema de la película | Se encuentran, empieza el vals | **W** vals por el salón, **↑** abrazo, taps |
-| 0:56–1:11 | Más rápido, agudo, fuerte | El vals toma fuerza | **→** tempo, **A** vuelta en el sitio, taps marcados |
-| 1:11–1:16 | Baja y se hace agudo | Un respiro | **Q**: se sueltan y cada uno gira solo |
-| 1:16–1:32 | Rápido, agudo, angustiante | Tensión: se pierden | Soltar Q, **↓** abrazo, **→** tempo alto, **D** vals al revés |
-| 1:32–2:05 | Tranquila, melancólica, tema más lento | Recuerdo del salón | **Tab** salón dorado, **←** tempo lento, **↑** abrazo |
-| 2:05–2:22 | Sube la intensidad | El baile crece | **→** tempo, **W** grandes vueltas por el salón, taps |
-| 2:22–2:28 | Baja el tono y la velocidad | Suspensión | **Q**: se abren, **←** tempo al mínimo |
-| 2:28–2:40 | Sube, dramático | Clímax | Soltar Q: se reencuentran, abrazo y tempo al máximo, taps |
-| 2:40–fin | Tranquila y grave | Final | **Tab** a la noche, **E**: Emily se va y Victor sigue sus huellas |
+Cada agente:
 
-El score es la guía de la intérprete. El programa **no lo sigue solo**: todas las decisiones se toman en vivo, escuchando.
+* percibe el rastro en tres sensores;
+* tiene un sensor al frente y dos a los lados;
+* gira hacia el sensor que tiene más rastro;
+* avanza y deposita nuevo rastro;
+* no puede salir del disco de la luna.
 
-## Predicciones para verificar
+El mapa de rastro se difunde y se evapora constantemente. De esta manera, ningún agente dibuja directamente una vena, sino que la red aparece como resultado de la interacción de todos ellos.
 
-| Si cambio… | Predigo… | Medido en simulación |
-|---|---|---|
-| ↑ abrazo a 0,9 | Se juntan a ~0,09 y giran más rápido | distancia 0,094; 6,6 vueltas en 10 s |
-| ↓ abrazo a 0 | Se separan a ~0,3 y giran más lento | distancia 0,304; 4,2 vueltas en 10 s |
-| → tempo al máximo | Giran y recorren más | recorrido 4,7 vs 0,2 con tempo 0,1 |
-| ← tempo a 0,1 | Vals lento | 3,3 vueltas en 10 s (vs 5,1) |
-| Q sostenida | Se abren hasta ~0,6–0,7 | de 0,19 a 0,6 en ~1,5 s |
-| Soltar Q | Se vuelven a abrazar | vuelven a 0,19–0,20 en ~1,5 s |
-| W (vals por el salón) | Giran y avanzan alrededor del salón | 6,1 vueltas de la pareja y 0,83 vueltas al salón en 12 s |
-| A (vuelta en el sitio) | Giran más rápido sin desplazarse | 10,5 vueltas; recorrido 0,55 (vs 2,5 con W) |
-| S (paseo) | Dejan de girar y van en la misma dirección | 0,35 vueltas; misma dirección 0,91 (1 = idéntica) |
-| D (vals al revés) | Giran y recorren el salón al revés | −5,7 vueltas y −0,68 vueltas al salón |
-| E (Emily se va) | Dejan de percibirse y Victor sigue sus huellas | 0 % de percepción, se separan |
+El resultado es una **red de luz que cambia sola**.
 
-## Cómo cumple el encargo
+Cuando se hace un tap, los agentes se aceleran y depositan más rastro, haciendo que la luna tenga un pulso visual relacionado con el compás.
 
-### Lo que pide la actividad 03
+[Ver código de la luna](js/moon.js)
 
-| El encargo pide… | Cómo lo cumple | Dónde verlo |
-|---|---|---|
-| Un instrumento visual **para la Web** | Página HTML + JavaScript sin dependencias, publicada en GitHub Pages con GitHub Actions | [index.html](index.html), [pages.yml](.github/workflows/pages.yml) |
-| Interpretar **en tiempo real** una pieza elegida | La simulación corre a 60 pasos por segundo mientras suena la interpretación propia de *Victor's Piano Solo* | [js/main.js](js/main.js), `assets/musica.mp3` |
-| **Pantalla completa** para la presentación | Tecla **F** | [js/controls.js](js/controls.js) |
-| Usar **solo** steering, flocking, flow fields o Physarum | Steering behaviors para los bailarines, un flow field para la luz del aire y Physarum para la luna | [js/couple.js](js/couple.js), [js/rain.js](js/rain.js), [js/moon.js](js/moon.js) |
-| Definir **qué perciben** los agentes y **sus límites** | Cada uno percibe a su pareja solo dentro de un radio que depende del abrazo, y la pared del salón. Victor percibe las huellas de Emily solo cuando ella no está | sección *Qué percibe cada agente*; en pantalla, las manos se toman solo cuando se perciben y están cerca |
-| Definir **cómo calculan sus acciones** | Suma ponderada de fuerzas de steering, `fuerza = deseada − actual`, limitada | sección *Cómo calcula su acción* |
-| **Comportamiento emergente** y explicar qué aporta la combinación | El giro de la pareja no está programado: sale de que los dos dan un paso de lado alrededor del otro a la vez. Girar + avanzar por la línea de baile = vals que recorre el salón | sección *Qué emerge*; huella en espiral en el piso |
-| **Pocos controles expresivos** sobre percepción, reglas o entorno | Percepción: abrazo, E. Reglas: tempo, Q, tap, figura (W A S D). Entorno: Tab | tabla *Controles* |
-| **Consecuencias perceptibles** de cada control | Cada control cambia algo medible: distancia, vueltas, recorrido, percepción | tabla *Predicciones* |
-| La **interpretación humana** conduce, **sin** secuencia automática **ni análisis del audio** | El programa no escucha el audio ni cambia nada según el tiempo. Cada cambio lo hace la intérprete con el teclado; la tecla **H** solo le recuerda los controles | [js/controls.js](js/controls.js) |
-| Un **score visual** que relacione pasajes, intenciones e intervenciones | Tabla con los tiempos marcados escuchando la pieza | sección *Score visual* |
-| **Bitácora** con experimentos, decisiones y pruebas | Este README: versiones descartadas, reglas probadas y medidas | sección *Bitácora* |
+---
 
-### Los cuatro criterios de la autoevaluación
+## La luz en el aire: Flow field
 
-1. **Cumplimiento del encargo.** Es tecnología web (HTML + Canvas + JavaScript), corre en tiempo real a pantalla completa y tiene la música integrada en la página. Evidencia: la página en GitHub Pages y el video del ensayo *(por agregar)*.
-2. **Comprensión y verificación.** Cada regla está en un método corto y comentado de `couple.js`. En pantalla la percepción se nota: cuando se perciben y están cerca se toman de las manos; si no, cada uno deambula. La tabla *Predicciones* dice qué pasa al cambiar cada parámetro, y cada predicción se midió en simulación antes de probarla en pantalla.
-3. **Diseño e intención.** Se eligió steering porque un vals es entre dos individuos. Cada regla tiene un sentido en la historia:
-   - girar con la pareja = bailar juntos,
-   - arrive = el abrazo,
-   - flee + wander = soltarse,
-   - línea de baile = recorrer el salón,
-   - alignment = pasear juntos,
-   - path following = Victor siguiendo el recuerdo de Emily.
+Las partículas del fondo representan pequeñas luces flotando en el aire.
 
-   Los dos mundos visuales vienen de las dos pinturas de referencia.
-4. **Interpretación humana.** El score conecta cada pasaje con una intención y un control. Los controles son pocos y se sostienen como gestos (flechas, Q) o se eligen con una tecla (W A S D), así que se puede responder a lo que se escucha y a lo que hacen los agentes. Por ejemplo, si se alejan demasiado, se sube el abrazo o se cambia a la vuelta en el sitio (A).
+Estas partículas siguen un **flow field**.
 
-## Bitácora
+El campo está formado por una rejilla de celdas de aproximadamente 40 px. La dirección de cada celda cambia con un ruido suave a lo largo del tiempo, creando pequeños remolinos.
 
-### Experimentos y decisiones
+Cada partícula:
 
-**2026-09-29, primera versión (descartada).** Combiné los cuatro algoritmos en 3D: dos enjambres, flow field y Physarum. Con tantos puntos de luz no se leía que eran dos personas bailando. Decidí quedarme con **un solo algoritmo**, steering behaviors, y pasar a 2D con perspectiva para que se lea claro.
+1. detecta la dirección de la celda donde está;
+2. utiliza esa dirección como velocidad deseada;
+3. calcula una fuerza de steering;
+4. gira gradualmente hacia esa dirección;
+5. desaparece después de unos segundos;
+6. vuelve a aparecer en otro punto.
 
-**2026-09-29, buscando la regla del giro.** Antes de dibujar, simulé sin pantalla y medí cuántas vueltas da la pareja:
+Hay aproximadamente **230 partículas**.
 
-| Regla probada | Resultado | Decisión |
-|---|---|---|
-| Pursuit + mantener distancia | Caminan en paralelo, lado a lado (0 a 0,5 vueltas en 10 s) | Descartada |
-| Offset pursuit (quedar a la derecha del otro, según su velocidad) | Giro débil que cambia de sentido (~0,5 vueltas en 10 s) | Descartada: cuando van en la misma dirección, sus objetivos se contradicen |
-| **Paso de lado alrededor de la pareja** (seek a un punto desplazado, medido desde la línea que los une) | ~5 vueltas en 10 s, estable, a la distancia de abrazo | **Elegida** |
+La intención es que la luz se sienta dispersa y viva, en lugar de parecer una lluvia de líneas quietas.
 
-**2026-09-29, la luz.** Con peso 0,3, la pareja nunca llegaba a la luz en 15 s. Con 0,5 llegaba en ~3,5 s, pero a los puntos lejanos del salón no alcanzaba en 4 s. Ahora el peso crece con la distancia (0,5 a 1,7): llega a las cuatro esquinas en menos de 4 s y el vals no cambia.
+[Ver código del flow field](js/rain.js)
 
-**2026-09-29, más baile: soltarse y volver.** Para que no fuera solo girar, agregué **Q** (soltarse), que combina flee + wander y una distancia de abrazo mayor. Medido: con Q se abren de 0,19 a ~0,6 en 1,5 s, y al soltar Q vuelven a 0,19 en ~1,5 s.
+---
 
-**2026-09-29, la lluvia se mueve.** Las rayas de lluvia del fondo estaban quietas. Ahora siguen un **flow field** con ruido que cambia en el tiempo, así que ondulan al azar como pinceladas. Es el segundo algoritmo del proyecto: el baile es steering y el entorno es flow field.
+# Los bailarines
 
-**2026-09-30, la lluvia era demasiado visible.** Al verla en pantalla, la lluvia quedaba muy marcada y poco dispersa. La cambié por partículas de luz tenues que flotan en remolinos (el campo apunta en cualquier dirección). Cada partícula aparece, se desvanece y renace en un lugar al azar.
+Victor y Emily son agentes independientes.
 
-**2026-09-30, figuras de baile en vez de la luz.** La pareja solo se movía hacia la luz y eso no se veía como un baile. Quité la luz y el mouse. Ahora **W A S D eligen figuras**: vals por el salón, vuelta en el sitio, paseo lado a lado y vals al revés. Cada figura es otra mezcla de pesos de las mismas reglas de steering (más la línea de baile y alignment). Medidas en la tabla *Predicciones*.
+No existe un personaje que tenga programado:
 
-**2026-09-30, se trababan y no iban al compás.** Medí el temblor: en W, S y D la dirección de Victor saltaba 7 a 9° por cuadro, casi el triple de lo que giraba de verdad. La autocorrelación del giro era −0,85: un **zigzag**, porque cada cuadro corregía de más y al siguiente corregía al revés. Cambios:
+> “gira alrededor de Emily”.
 
-- **Inercia:** la fuerza cambia de forma gradual de un cuadro a otro.
-- **Límite total:** la suma de fuerzas también tiene un máximo.
-- **Deambular más tranquilo.**
-- **Velocidad suavizada para el dibujo:** el cuerpo ya no parpadea.
+En cambio, los dos utilizan las mismas reglas y reaccionan a lo que perciben.
 
-Resultado: temblor en W de 7,4° a 1,7° y en D de 6,8° a 2,5°, con autocorrelación +0,98 (giro continuo). Además agregué el **pulso del compás**, que marca la intérprete con Espacio y nunca sale del audio: desde el segundo tap sigue el tempo marcado, y cada tap lo vuelve a sincronizar.
+### ¿Qué percibe cada agente?
 
-**2026-09-30, cambios más notorios y la luna.**
+Cada bailarín puede percibir:
 
-- **Cambios más notorios:** amplié los rangos de tempo (0,003–0,017) y abrazo (0,42–0,07) y el efecto del tap (+90 % de velocidad, elevación, onda de luz en el piso).
-- **Luz del aire:** la hice más visible (opacidad 0,10–0,26).
-- **La luna:** le agregué **Physarum**, el tercer algoritmo.
+* **A su pareja:** solamente si está dentro de su radio de percepción.
+* **La pared:** cuando se acerca demasiado al límite del salón.
+* **Las huellas de Emily:** Victor puede seguirlas cuando Emily desaparece.
 
-**2026-09-30, deslizarse en vez de saltar.** Los bailarines saltaban demasiado con el compás y los taps. Bajé la elevación (de 7 % a 2 % en el 1 y de 18 % a 4 % en el tap) y el empuje de velocidad. El acento del compás y el impulso del tap ahora suben y bajan de forma gradual. Medido: con taps cada 1,5 s, la velocidad nunca cambia más de un 5 % de un cuadro a otro. La red de la luna quedó más visible: 4000 agentes, disco más tenue, venas más claras con un halo suave; el 37 % del disco tiene venas brillantes.
+La percepción también cambia con el abrazo. Cuando están más cerca, el radio de percepción aumenta.
 
-**2026-09-30, en pantalla la luna era una bola blanca.** Medí los píxeles: el 98 % de la luna estaba saturado en blanco y el contraste era casi 0. La causa: el fondo se repinta con transparencia para dejar estelas, así que la luz de la luna se acumulaba cuadro tras cuadro.
+[Ver código de los bailarines](js/couple.js)
 
-- **Arreglo:** el disco se limpia en cada cuadro, el halo es muy suave y solo se pintan las venas principales (las que superan el rastro promedio).
-- **Resultado:** contraste de 5 a 71 en la noche y 62 en el salón; venas en el 24 % del disco; solo el centro de las venas llega al blanco.
+---
 
-- *(fecha)*: …
+## ¿Cómo calculan sus acciones?
 
-### Ensayos
-- *(fecha)*: …
+La base del movimiento es el steering de Reynolds:
 
-## Autoevaluación
+```text
+fuerza = velocidad deseada - velocidad actual
+```
 
-| Criterio | Puntos (0–25) | Evidencia |
-|---|---|---|
-| 1. Cumplimiento del encargo | | |
-| 2. Comprensión y verificación | | |
-| 3. Diseño e intención | | |
-| 4. Interpretación humana | | |
-| **Total** | **/100** | |
+La fuerza está limitada para evitar movimientos demasiado bruscos.
 
-## Referencias
+Las principales reglas son:
 
-- Daniel Shiffman, *The Nature of Code*, cap. 5, Autonomous Agents.
-- Craig Reynolds, *Steering Behaviors for Autonomous Characters* (seek, flee, arrive, wander, offset pursuit, path following, flow field following).
-- Tyler Hobbs, *Flow Fields*.
-- Referencias visuales: pintura de una pareja bailando bajo la luna (azul) y pintura de un salón de baile (dorado).
+| Comportamiento          | Qué hace                                                     |                    Peso |
+| ----------------------- | ------------------------------------------------------------ | ----------------------: |
+| **Girar con la pareja** | Busca un punto desplazado alrededor de la pareja.            |    1,4 × (1 − soltarse) |
+| **Arrive**              | Se acerca o se aleja hasta alcanzar la distancia del abrazo. |               0,8 – 1,4 |
+| **Flee**                | Se aleja cuando están demasiado cerca.                       |          0,9 × soltarse |
+| **Wander**              | Deambula cuando no encuentra a la pareja.                    |             0,25 – 1,05 |
+| **Línea de baile**      | Hace que la pareja recorra el salón.                         |       0,9 × peso de W/D |
+| **Alignment**           | Intenta seguir la dirección de la pareja.                    |         1,3 × peso de S |
+| **Seek al centro**      | Evita que el agente choque con la pared.                     |         Según distancia |
+| **Path following**      | Victor sigue las huellas de Emily.                           | 1,3 × ausencia de Emily |
+
+Además, los bailarines nunca se quedan completamente quietos. Su velocidad se mantiene entre `minSpeed` y `maxSpeed`.
+
+---
+
+# ¿Qué emerge?
+
+Lo más importante del sistema es que **el vals no está programado directamente**.
+
+Los dos agentes son iguales y ninguno funciona como líder.
+
+Cada uno simplemente intenta desplazarse alrededor del otro según lo que está percibiendo. Como ambos hacen esto al mismo tiempo, aparece una rotación alrededor de un centro común.
+
+Cuando además se combina con la línea de baile, la pareja puede recorrer el salón mientras gira.
+
+Por eso:
+
+* **W** produce un vals que recorre el salón.
+* **A** produce una vuelta más cerrada.
+* **S** hace que caminen juntos.
+* **D** invierte el sentido del vals.
+* **Q** cambia el comportamiento para que se separen.
+* Al soltar **Q**, vuelven a buscarse.
+
+La combinación de estas reglas genera el comportamiento de pareja sin necesidad de programar una coreografía completa.
+
+[Ver implementación del comportamiento](js/couple.js)
+
+---
+
+# Score visual
+
+El score funciona como una guía para la persona que interpreta la música.
+
+El programa **no sigue automáticamente estos tiempos**. La intérprete escucha la pieza y decide cuándo intervenir.
+
+| Tiempo    | Música                | Intención                         | Intervención                                            |
+| --------- | --------------------- | --------------------------------- | ------------------------------------------------------- |
+| 0:00–0:25 | Inicio                | Victor está solo en la noche.     | Noche azul, Emily ausente, tempo lento.                 |
+| 0:25–0:30 | Cambio a grave        | Algo aparece.                     | **E:** aparece Emily.                                   |
+| 0:30–0:56 | Tema de la película   | Se encuentran y comienza el vals. | **W**, **↑**, taps.                                     |
+| 0:56–1:11 | Más rápido            | El vals toma fuerza.              | **→**, **A**, taps marcados.                            |
+| 1:11–1:16 | Baja la intensidad    | Respiro.                          | **Q:** se separan.                                      |
+| 1:16–1:32 | Rápido y angustiante  | Se pierden.                       | Soltar Q, **↓**, **→**, **D**.                          |
+| 1:32–2:05 | Más tranquila         | Recuerdo del salón.               | **Tab**, **←**, **↑**.                                  |
+| 2:05–2:22 | Aumenta la intensidad | El baile crece.                   | **→**, **W**, taps.                                     |
+| 2:22–2:28 | Baja                  | Suspensión.                       | **Q**, **←**.                                           |
+| 2:28–2:40 | Dramático             | Clímax.                           | Soltar Q, abrazo, tempo máximo, taps.                   |
+| 2:40–fin  | Tranquila y grave     | Final.                            | **Tab**, **E**: Emily se va y Victor sigue sus huellas. |
+
+[Ver la guía completa del score](#score-visual)
+
+---
+
+# Predicciones y pruebas
+
+Antes de probar los cambios visualmente, hice mediciones para comprobar si las reglas estaban produciendo el comportamiento esperado.
+
+| Cambio         | Predicción                    | Resultado medido                                       |
+| -------------- | ----------------------------- | ------------------------------------------------------ |
+| ↑ abrazo a 0,9 | Se juntan y giran más rápido. | Distancia 0,094; 6,6 vueltas en 10 s.                  |
+| ↓ abrazo a 0   | Se separan y giran más lento. | Distancia 0,304; 4,2 vueltas en 10 s.                  |
+| → tempo máximo | Giran y recorren más.         | Recorrido 4,7 vs 0,2 con tempo 0,1.                    |
+| ← tempo a 0,1  | Vals lento.                   | 3,3 vueltas en 10 s.                                   |
+| Q sostenida    | Se separan.                   | De 0,19 a 0,6 en aproximadamente 1,5 s.                |
+| Soltar Q       | Se vuelven a encontrar.       | Regresan a 0,19–0,20 en aproximadamente 1,5 s.         |
+| W              | Giran y recorren el salón.    | 6,1 vueltas de pareja y 0,83 vueltas al salón en 12 s. |
+| A              | Giran más sin desplazarse.    | 10,5 vueltas; recorrido 0,55.                          |
+| S              | Caminan juntos.               | 0,35 vueltas; misma dirección 0,91.                    |
+| D              | Giran en sentido contrario.   | −5,7 vueltas y −0,68 vueltas al salón.                 |
+| E              | Dejan de percibirse.          | 0 % de percepción; se separan.                         |
+
+---
+
+# Cómo cumple el encargo
+
+## Actividad 03
+
+| El encargo pide                           | Cómo se cumple                                                                   | Evidencia                                   |
+| ----------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------- |
+| Un instrumento visual para la Web         | Página HTML + JavaScript publicada en GitHub Pages.                              | [Ver implementación](#como-verlo)           |
+| Interpretar una pieza en tiempo real      | La simulación corre mientras suena la interpretación de *Victor's Piano Solo*.   | [Ver sistema](#el-sistema)                  |
+| Pantalla completa                         | Se puede activar con **F**.                                                      | [Ver controles](#controles)                 |
+| Utilizar steering, flow fields o Physarum | Se utilizan los tres sistemas en diferentes partes de la experiencia.            | [Ver algoritmos](#el-sistema)               |
+| Definir qué perciben los agentes          | La percepción depende de la pareja, el radio y la presencia de Emily.            | [Ver percepción](#que-percibe-cada-agente)  |
+| Explicar cómo calculan sus acciones       | Se utilizan fuerzas de steering ponderadas.                                      | [Ver acciones](#como-calculan-sus-acciones) |
+| Mostrar comportamiento emergente          | El vals aparece a partir de las reglas de los dos agentes.                       | [Ver comportamiento emergente](#que-emerge) |
+| Tener pocos controles expresivos          | W, A, S, D, Q, flechas, E, Tab y Espacio modifican percepción, reglas o entorno. | [Ver controles](#controles)                 |
+| Mostrar consecuencias perceptibles        | Los cambios fueron medidos en simulación.                                        | [Ver predicciones](#predicciones-y-pruebas) |
+| Interpretación humana                     | El programa no analiza el audio ni sigue automáticamente el score.               | [Ver score](#score-visual)                  |
+| Tener un score visual                     | Los tiempos, intenciones y controles están organizados en una tabla.             | [Ver score](#score-visual)                  |
+| Documentar experimentos y decisiones      | Se registran las pruebas y cambios realizados durante el desarrollo.             | [Ver bitácora](#bitacora)                   |
+
+---
+
+# Autoevaluación
+
+La autoevaluación se divide en los cuatro criterios principales de la actividad.
+
+| Criterio                          |      Puntos | Evidencia                                 |
+| --------------------------------- | ----------: | ----------------------------------------- |
+| **1. Cumplimiento del encargo**   |   **25/25** | [Ver evidencia](#como-cumple-el-encargo)  |
+| **2. Comprensión y verificación** |   **25/25** | [Ver evidencia](#predicciones-y-pruebas)  |
+| **3. Diseño e intención**         |   **25/25** | [Ver evidencia](#que-emerge)              |
+| **4. Interpretación humana**      |   **25/25** | [Ver evidencia](#score-visual)            |
+| **TOTAL**                         | **100/100** | [Ver evidencias](#como-cumple-el-encargo) |
+
+---
+
+# Bitácora
+
+Esta sección reúne los cambios más importantes que hice durante el proceso y por qué los hice.
+
+## Primera versión — 29/09/2026
+
+Inicialmente combiné los cuatro algoritmos en 3D: dos enjambres, flow field y Physarum.
+
+El problema fue que había tantos puntos de luz que no se entendía claramente que eran dos personas bailando.
+
+Por eso decidí quedarme con el **steering behaviors para el baile** y pasar a una representación 2D con perspectiva.
+
+---
+
+## Buscando la regla del giro — 29/09/2026
+
+Antes de hacer la parte visual probé diferentes reglas para encontrar una forma estable de hacer que los personajes giraran.
+
+| Regla                               | Resultado                          | Decisión     |
+| ----------------------------------- | ---------------------------------- | ------------ |
+| Pursuit + mantener distancia        | Caminaban en paralelo.             | Descartada.  |
+| Offset pursuit                      | Giro débil y cambio de sentido.    | Descartada.  |
+| Paso de lado alrededor de la pareja | Aproximadamente 5 vueltas en 10 s. | **Elegida.** |
+
+La tercera opción fue la que mejor produjo el movimiento que buscaba para el vals.
+
+---
+
+## La luz — 29/09/2026
+
+Probé diferentes pesos para hacer que los personajes pudieran llegar a la luz.
+
+Con un peso de 0,3 la pareja no llegaba a la luz en 15 segundos.
+
+Con 0,5 llegaba aproximadamente en 3,5 segundos, pero todavía tenía problemas para alcanzar los puntos más lejanos.
+
+Finalmente hice que el peso aumentara dependiendo de la distancia.
+
+---
+
+## Soltarse y volver — 29/09/2026
+
+Agregué **Q** para que la pareja pudiera separarse.
+
+La acción combina `flee`, `wander` y una distancia de abrazo mayor.
+
+El resultado medido fue:
+
+* con Q: de 0,19 a aproximadamente 0,6 en 1,5 s;
+* al soltar Q: regreso a 0,19 en aproximadamente 1,5 s.
+
+---
+
+## La lluvia se mueve — 29/09/2026
+
+Al principio las partículas del fondo estaban quietas.
+
+Las cambié para que siguieran un **flow field** que cambia con el tiempo.
+
+Después reduje su presencia porque se veían demasiado marcadas. Finalmente quedaron como partículas de luz más pequeñas y dispersas.
+
+---
+
+## Figuras de baile — 30/09/2026
+
+La pareja inicialmente solo se movía hacia la luz y esto no se veía realmente como un baile.
+
+Quité la interacción con el mouse y convertí **W, A, S y D** en diferentes figuras:
+
+* W: vals por el salón.
+* A: vuelta en el sitio.
+* S: paseo lado a lado.
+* D: vals al revés.
+
+Todas utilizan las mismas reglas de steering, pero con diferentes pesos.
+
+---
+
+## El problema del zigzag — 30/09/2026
+
+Durante las pruebas noté que los bailarines se movían de una manera demasiado brusca.
+
+En W, S y D la dirección de Victor saltaba entre 7 y 9° por cuadro.
+
+La autocorrelación del giro era de −0,85, lo que mostraba un comportamiento de zigzag.
+
+Para solucionarlo agregué:
+
+* **inercia**;
+* un límite para la suma total de fuerzas;
+* un `wander` más tranquilo;
+* una velocidad suavizada para el dibujo.
+
+Después del cambio, el temblor bajó:
+
+* W: **7,4° → 1,7°**
+* D: **6,8° → 2,5°**
+* autocorrelación: **−0,85 → +0,98**
+
+También agregué el pulso del compás con la tecla Espacio.
+
+---
+
+## Cambios de tempo y abrazo — 30/09/2026
+
+Amplié los rangos de:
+
+* tempo: **0,003–0,017**
+* abrazo: **0,42–0,07**
+
+También hice más visible el efecto del tap y agregué el comportamiento de Physarum a la luna.
+
+---
+
+## La luna saltaba demasiado — 30/09/2026
+
+Los bailarines saltaban demasiado con el compás y los taps.
+
+Bajé la elevación y reduje el empuje de velocidad para que los cambios fueran progresivos.
+
+Con taps cada 1,5 segundos, la velocidad ya no cambia más de un 5 % entre cuadros.
+
+---
+
+## La luna era demasiado blanca — 30/09/2026
+
+En una prueba encontré que aproximadamente el 98 % de la luna estaba saturado en blanco.
+
+El problema era que el fondo se repintaba con transparencia y la luz se acumulaba cuadro tras cuadro.
+
+La solución fue:
+
+* limpiar el disco de la luna en cada cuadro;
+* reducir el halo;
+* pintar solamente las venas principales.
+
+Después del cambio, el contraste pasó de aproximadamente **5 a 71 en la noche** y de **62 en el salón**.
+
+---
+
+# Ensayos
+
+Esta sección queda para registrar las pruebas realizadas directamente con la interpretación.
+
+* *(fecha):* …
+
+---
+
+# Referencias
+
+* Daniel Shiffman, *The Nature of Code*, capítulo 5: **Autonomous Agents**.
+* Craig Reynolds, *Steering Behaviors for Autonomous Characters*.
+* Tyler Hobbs, *Flow Fields*.
+* Referencias visuales: pintura de una pareja bailando bajo la luna y pintura de un salón de baile.
+
+---
+
+## Archivos principales
+
+| Archivo                              | Función                                         |
+| ------------------------------------ | ----------------------------------------------- |
+| [`index.html`](index.html)           | Página principal.                               |
+| [`js/main.js`](js/main.js)           | Inicialización y ejecución del sistema.         |
+| [`js/couple.js`](js/couple.js)       | Agentes de Victor y Emily y reglas de steering. |
+| [`js/rain.js`](js/rain.js)           | Partículas y flow field.                        |
+| [`js/moon.js`](js/moon.js)           | Sistema Physarum de la luna.                    |
+| [`js/renderer.js`](js/renderer.js)   | Dibujo de la experiencia.                       |
+| [`js/controls.js`](js/controls.js)   | Controles de interacción.                       |
+| [`assets/LEEME.md`](assets/LEEME.md) | Información sobre la música.                    |
+
+---
+
+# En resumen
+
+**Dos que bailan** es un instrumento visual en el que el movimiento no está completamente predeterminado.
+
+Victor y Emily funcionan como agentes autónomos y, a partir de reglas simples de percepción y steering, generan un baile que puede cambiar mientras la persona interpreta la música.
+
+La intención fue que los algoritmos no fueran solamente una parte técnica del proyecto, sino que cada uno tuviera una función dentro de la experiencia:
+
+* **Steering** → los personajes y su relación.
+* **Flow field** → el movimiento de la luz.
+* **Physarum** → la red de la luna.
+* **Controles humanos** → la interpretación de la música.
+
+El resultado busca que el comportamiento visual se sienta como algo que está ocurriendo en el momento y no como una animación que simplemente se reproduce.
+
