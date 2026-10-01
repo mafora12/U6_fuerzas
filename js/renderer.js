@@ -1,6 +1,7 @@
 import { rgba } from './palette.js';
 import { params } from './couple.js';
 import { Rain } from './rain.js';
+import { MoonSlime } from './moon.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -12,7 +13,9 @@ export class Renderer {
     this.ctx = canvas.getContext('2d');
     this.paint = document.createElement('canvas');   // la huella del baile en el piso
     this.pctx = this.paint.getContext('2d');
-    this.rain = new Rain();   // lluvia de luz que sigue un flow field
+    this.rain = new Rain();        // luz en el aire que sigue un flow field
+    this.slime = new MoonSlime();  // la superficie de la luna, tejida por Physarum
+    this.lastT = null;
     this.last = new Map();
     this.resize();
     addEventListener('resize', () => this.resize());
@@ -65,18 +68,23 @@ export class Renderer {
 
     // ---- 2. Luna (o candelabro) y lluvia de luz, como en la pintura ----
     ctx.globalCompositeOperation = 'lighter';
-    const mx = W * 0.5, my = this.horizon - H * 0.2, mr = H * 0.085 * (1 + 0.08 * st.pulse);
+    const mx = W * 0.5, my = this.horizon - H * 0.21, mr = H * 0.11 * (1 + 0.06 * st.pulse);
     const halo = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 4.5);
     halo.addColorStop(0, rgba(pal.moon, 0.22));
     halo.addColorStop(1, rgba(pal.moon, 0));
     ctx.fillStyle = halo;
     ctx.fillRect(mx - mr * 5, my - mr * 5, mr * 10, mr * 10);
     const core = ctx.createRadialGradient(mx, my, 0, mx, my, mr);
-    core.addColorStop(0, rgba(pal.moon, 0.9));
-    core.addColorStop(0.8, rgba(pal.moon, 0.55));
+    core.addColorStop(0, rgba(pal.moon, 0.5));
+    core.addColorStop(0.8, rgba(pal.moon, 0.3));
     core.addColorStop(1, rgba(pal.moon, 0));
     ctx.fillStyle = core;
     ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
+    // La red de Physarum sobre la luna; late con cada tap.
+    const dt60 = this.lastT === null ? 1 : Math.min(3, (t - this.lastT) * 60);
+    this.lastT = t;
+    this.slime.update(st.pulse, dt60);
+    this.slime.draw(ctx, mx, my, mr, pal.moon);
 
     this.rain.update(W, H, t);
     this.rain.draw(ctx, pal, this.horizon);
@@ -112,6 +120,21 @@ export class Renderer {
     ctx.beginPath(); ctx.arc(0, 0, this.rx * 0.28, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 
+    // ---- 4b. Cada tap (el "1" del compás) deja una onda de luz en el piso ----
+    const age = performance.now() / 1000 - st.tapAt;
+    if (age >= 0 && age < 1.4) {
+      const k = age / 1.4;
+      const [rx, ry] = this.toScreen((v.x + e.x * ea) / (1 + ea), (v.y + e.y * ea) / (1 + ea));
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = rgba(pal.light, 0.5 * (1 - k));
+      ctx.lineWidth = 3 * (1 - k) + 1;
+      ctx.beginPath();
+      ctx.ellipse(rx, ry, this.rx * (0.05 + 0.35 * k), this.ry * (0.05 + 0.35 * k), 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     // ---- 5. Reflejos y figuras, de atrás hacia adelante ----
     const figs = [
       { d: v, kind: 'victor', a: 1 },
@@ -134,8 +157,9 @@ export class Renderer {
     const { ctx } = this;
     const [sx, sy] = this.toScreen(d.x, d.y);
     const s = this.depth(d.y);
-    const h = this.H * 0.34 * s * (1 + 0.1 * st.pulse);
-    const vxs = d.vx * this.rx;                       // velocidad horizontal en pantalla
+    // Suben en el 1 del compás y bajan en el 2 y el 3 (rise & fall del vals); el tap los eleva más.
+    const h = this.H * 0.34 * s * (1 + 0.07 * st.accent + 0.18 * st.pulse);
+    const vxs = d.svx * this.rx;                      // velocidad suavizada: el cuerpo no parpadea
     const lean = clamp(vxs * 0.035, -0.14, 0.14) * h;  // se inclina hacia donde va
     const sway = -clamp(vxs * 0.06, -0.3, 0.3) * h;    // la falda queda atrás
 

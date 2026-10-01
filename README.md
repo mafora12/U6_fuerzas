@@ -8,6 +8,7 @@ Unidad 6 · Simulación · capítulo 5 de *The Nature of Code*.
 **Algoritmos usados:**
 - **Steering behaviors (Reynolds)** para el baile. Es el algoritmo que trabaja con individuos, y un vals es entre dos personas, así que cada bailarín es **un agente**.
 - **Flow field** para la luz que flota en el aire del fondo. El entorno cambia solo, y cada partícula lo sigue.
+- **Physarum** para la superficie de la luna: una red de venas de luz que se teje sola y late con cada tap.
 
 ## Cómo verlo
 
@@ -31,7 +32,7 @@ Unidad 6 · Simulación · capítulo 5 de *The Nature of Code*.
 | **S** | Figura: paseo lado a lado | Dejan de girar y caminan juntos copiando la dirección del otro (alignment) |
 | **D** | Figura: vals al revés | Giran hacia el otro lado y recorren el salón en sentido contrario |
 | **Q** (sostener) | Soltarse | Se alejan (flee), crece la distancia deseada y cada uno deambula solo. Al soltar Q se buscan y se vuelven a abrazar |
-| **Espacio** (tap) | El “1” del compás de 3/4 | Por un momento, más velocidad y un paso más largo alrededor de la pareja: una vuelta más fuerte |
+| **Espacio** (tap) | El “1” del compás de 3/4 | Una vuelta más fuerte, los bailarines se elevan, una onda de luz en el piso y la luna late. Desde el segundo tap el compás sigue al tempo marcado: suben y aceleran en el 1, bajan en el 2 y el 3 |
 | **↑ / ↓** (sostener) | Abrazo | Distancia de abrazo (0,36 → 0,08) y radio de percepción (0,5 → 1,6) |
 | **← / →** (sostener) | Tempo | Velocidad máxima: el vals gira más lento o más rápido |
 | **E** | Presencia de Emily | Si se va, dejan de percibirse y Victor sigue sus huellas (path following) |
@@ -41,15 +42,25 @@ Unidad 6 · Simulación · capítulo 5 de *The Nature of Code*.
 
 ## El sistema
 
-El comportamiento de los bailarines está en [js/couple.js](js/couple.js), la lluvia en [js/rain.js](js/rain.js) y el dibujo en [js/renderer.js](js/renderer.js).
+El comportamiento de los bailarines está en [js/couple.js](js/couple.js), la luz del aire en [js/rain.js](js/rain.js), la luna en [js/moon.js](js/moon.js) y el dibujo en [js/renderer.js](js/renderer.js).
+
+### La luna: Physarum
+
+La superficie de la luna es un mapa de rastro de 96×96 donde viven **2500 agentes Physarum**:
+
+- **Qué percibe cada agente:** el rastro en tres sensores a 5 px (adelante, 0,6 rad a la izquierda y a la derecha).
+- **Cómo actúa:** gira 0,35 rad hacia el sensor con más rastro, avanza, deposita, y no puede salir del disco.
+- **El mapa:** se difunde (3×3) y se evapora (×0,9) en cada cuadro.
+- **Qué emerge:** ningún agente dibuja una vena, pero juntos tejen una **red de luz** que se transforma sola. Medido: las venas brillan más de 1000 veces que los huecos entre ellas.
+- **Control:** cada tap los acelera y hace que depositen más; el brillo de la red se multiplica por ~4, así que la luna late con el compás que marca la intérprete.
 
 ### La luz en el aire: flow field
 
 Las partículas de luz del fondo, que evocan la lluvia de luz de la pintura azul, siguen un **flow field**:
 
 - **El campo:** una rejilla de celdas de 40 px sobre la pantalla. Un ruido suave que cambia con el tiempo decide la dirección de cada celda, en cualquier sentido, así que el campo forma **remolinos** que se transforman lentamente.
-- **La regla:** cada una de las 180 partículas es un agente que **solo percibe la celda donde está**. Toma esa dirección como velocidad deseada y gira hacia ella con steering: `fuerza = deseada − actual`, limitada. Además tiene una caída muy leve, como polvo de luz.
-- **Vida:** cada partícula vive de 3 a 8 s. Aparece y se desvanece poco a poco, y después renace en un punto al azar. Así la luz queda dispersa y es tenue (opacidad máxima 0,10).
+- **La regla:** cada una de las 230 partículas es un agente que **solo percibe la celda donde está**. Toma esa dirección como velocidad deseada y gira hacia ella con steering: `fuerza = deseada − actual`, limitada. Además tiene una caída muy leve, como polvo de luz.
+- **Vida:** cada partícula vive de 3 a 8 s. Aparece y se desvanece poco a poco, y después renace en un punto al azar. Así la luz queda dispersa (opacidad entre 0,10 y 0,26).
 - El campo solo guarda direcciones; la regla con la que cada partícula lo consulta es aparte.
 
 Medido en simulación: las partículas se mueven en todas las direcciones, a ~0,7 px por cuadro, y quedan repartidas por toda la pantalla.
@@ -126,7 +137,7 @@ El score es la guía de la intérprete. El programa **no lo sigue solo**: todas 
 | Un instrumento visual **para la Web** | Página HTML + JavaScript sin dependencias, publicada en GitHub Pages con GitHub Actions | [index.html](index.html), [pages.yml](.github/workflows/pages.yml) |
 | Interpretar **en tiempo real** una pieza elegida | La simulación corre a 60 pasos por segundo mientras suena la interpretación propia de *Victor's Piano Solo* | [js/main.js](js/main.js), `assets/musica.mp3` |
 | **Pantalla completa** para la presentación | Tecla **F** | [js/controls.js](js/controls.js) |
-| Usar **solo** steering, flocking, flow fields o Physarum | Steering behaviors de Reynolds para los bailarines (seek, flee, arrive, wander, path following y seek a un punto desplazado) y un flow field para la lluvia | [js/couple.js](js/couple.js), [js/rain.js](js/rain.js) |
+| Usar **solo** steering, flocking, flow fields o Physarum | Steering behaviors para los bailarines, un flow field para la luz del aire y Physarum para la luna | [js/couple.js](js/couple.js), [js/rain.js](js/rain.js), [js/moon.js](js/moon.js) |
 | Definir **qué perciben** los agentes y **sus límites** | Cada uno percibe a su pareja solo dentro de un radio que depende del abrazo, y la pared del salón. Victor percibe las huellas de Emily solo cuando ella no está | sección *Qué percibe cada agente*; en pantalla, las manos se toman solo cuando se perciben y están cerca |
 | Definir **cómo calculan sus acciones** | Suma ponderada de fuerzas de steering, `fuerza = deseada − actual`, limitada | sección *Cómo calcula su acción* |
 | **Comportamiento emergente** y explicar qué aporta la combinación | El giro de la pareja no está programado: sale de que los dos dan un paso de lado alrededor del otro a la vez. Girar + avanzar por la línea de baile = vals que recorre el salón | sección *Qué emerge*; huella en espiral en el piso |
@@ -174,6 +185,21 @@ El score es la guía de la intérprete. El programa **no lo sigue solo**: todas 
 **2026-09-30, la lluvia era demasiado visible.** Al verla en pantalla, la lluvia quedaba muy marcada y poco dispersa. La cambié por partículas de luz tenues que flotan en remolinos (el campo apunta en cualquier dirección). Cada partícula aparece, se desvanece y renace en un lugar al azar.
 
 **2026-09-30, figuras de baile en vez de la luz.** La pareja solo se movía hacia la luz y eso no se veía como un baile. Quité la luz y el mouse. Ahora **W A S D eligen figuras**: vals por el salón, vuelta en el sitio, paseo lado a lado y vals al revés. Cada figura es otra mezcla de pesos de las mismas reglas de steering (más la línea de baile y alignment). Medidas en la tabla *Predicciones*.
+
+**2026-09-30, se trababan y no iban al compás.** Medí el temblor: en W, S y D la dirección de Victor saltaba 7 a 9° por cuadro, casi el triple de lo que giraba de verdad. La autocorrelación del giro era −0,85: un **zigzag**, porque cada cuadro corregía de más y al siguiente corregía al revés. Cambios:
+
+- **Inercia:** la fuerza cambia de forma gradual de un cuadro a otro.
+- **Límite total:** la suma de fuerzas también tiene un máximo.
+- **Deambular más tranquilo.**
+- **Velocidad suavizada para el dibujo:** el cuerpo ya no parpadea.
+
+Resultado: temblor en W de 7,4° a 1,7° y en D de 6,8° a 2,5°, con autocorrelación +0,98 (giro continuo). Además agregué el **pulso del compás**, que marca la intérprete con Espacio y nunca sale del audio: desde el segundo tap sigue el tempo marcado, y cada tap lo vuelve a sincronizar.
+
+**2026-09-30, cambios más notorios y la luna.**
+
+- **Cambios más notorios:** amplié los rangos de tempo (0,003–0,017) y abrazo (0,42–0,07) y el efecto del tap (+90 % de velocidad, elevación, onda de luz en el piso).
+- **Luz del aire:** la hice más visible (opacidad 0,10–0,26).
+- **La luna:** le agregué **Physarum**, el tercer algoritmo.
 
 - *(fecha)*: …
 

@@ -9,7 +9,7 @@ import { rgba } from './palette.js';
 
 const CELL = 40;            // tamaño de cada celda del campo, en píxeles
 const SCALE = 0.09;         // tamaño de los remolinos (más pequeño = remolinos más grandes)
-const DROPS = 180;
+const DROPS = 230;
 const FALL = 0.04;          // caída leve, además del campo
 
 // Ruido suave 3D (value noise): valores entre 0 y 1 que cambian poco a poco.
@@ -58,9 +58,9 @@ export class Rain {
       y: Math.random() * this.H,
       vx: 0, vy: 0,
       speed: 0.3 + Math.random() * 0.9,     // velocidad máxima: lenta, flota
-      len: 4 + Math.random() * 8,           // largo de la estela
-      w: 0.6 + Math.random() * 0.9,
-      a: 0.03 + Math.random() * 0.07,       // muy tenue
+      len: 7 + Math.random() * 12,          // largo de la estela
+      w: 0.9 + Math.random() * 1.4,
+      a: 0.10 + Math.random() * 0.16,       // visible pero suave
       age: 0,
       life: 3 + Math.random() * 5,          // segundos de vida
     };
@@ -112,7 +112,7 @@ export class Rain {
       // Aparece y se desvanece suavemente a lo largo de su vida.
       const life = Math.sin(Math.PI * Math.min(1, d.age / d.life));
       // Sobre el piso se ve aún más tenue.
-      const fade = d.y < horizon ? 1 : Math.max(0.2, 1 - (d.y - horizon) / 300);
+      const fade = d.y < horizon ? 1 : Math.max(0.35, 1 - (d.y - horizon) / 300);
       const alpha = d.a * life * fade;
       if (alpha < 0.004) continue;
       ctx.strokeStyle = rgba(pal.streak, alpha);

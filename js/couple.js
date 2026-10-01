@@ -19,10 +19,12 @@ export class Dancer {
     this.vx = Math.cos(heading) * 0.004;
     this.vy = Math.sin(heading) * 0.004;
     this.ax = 0; this.ay = 0;
+    this.fax = 0; this.fay = 0;   // fuerza con inercia
     this.wanderAngle = Math.random() * TAU;
     this.sees = false;          // ¿percibe a su pareja ahora?
     this.target = null;         // el punto que está buscando (para la vista D)
     this.step = 0;              // fase del paso (para dibujar las piernas)
+    this.svx = this.vx; this.svy = this.vy;   // velocidad suavizada (solo para dibujar)
     this.trail = [];
   }
 
@@ -77,7 +79,7 @@ export class Dancer {
   // dir = +1 recorre el salón en un sentido, −1 en el contrario.
   lineOfDance(dir, w, p) {
     if (w <= 0) return;
-    const a = Math.atan2(this.y, this.x) + 0.35 * dir;
+    const a = Math.atan2(this.y, this.x) + 0.6 * dir;
     this.seek(Math.cos(a) * 0.5, Math.sin(a) * 0.5, w, p);
   }
 
@@ -94,8 +96,9 @@ export class Dancer {
   }
 
   // WANDER: un punto que se mueve al azar sobre un círculo frente al agente.
-  wander(w, p) {
-    this.wanderAngle += (Math.random() - 0.5) * 0.5;
+  // jitter: cuánto cambia el punto al azar en cada cuadro (poco = paseo tranquilo).
+  wander(w, p, jitter = 0.5) {
+    this.wanderAngle += (Math.random() - 0.5) * jitter;
     const sp = this.speed || 1e-6;
     const cx = this.x + (this.vx / sp) * 0.12;
     const cy = this.y + (this.vy / sp) * 0.12;
@@ -116,8 +119,16 @@ export class Dancer {
   }
 
   integrate(p, dt) {
-    this.vx += this.ax * dt;
-    this.vy += this.ay * dt;
+    // La suma de todas las fuerzas también tiene un límite: así el giro es suave
+    // y la dirección no se pasa de largo de un cuadro a otro.
+    const a = Math.hypot(this.ax, this.ay), maxA = p.maxForce * 1.5;
+    if (a > maxA) { this.ax *= maxA / a; this.ay *= maxA / a; }
+    // Inercia: la fuerza no cambia de golpe de un cuadro a otro (un cuerpo tiene peso).
+    // Sin esto, cada cuadro corregía de más y el bailarín zigzagueaba.
+    this.fax += (this.ax - this.fax) * 0.25 * dt;
+    this.fay += (this.ay - this.fay) * 0.25 * dt;
+    this.vx += this.fax * dt;
+    this.vy += this.fay * dt;
     const sp = Math.hypot(this.vx, this.vy) || 1e-6;
     // Un bailarín nunca se queda quieto.
     const k = sp > p.maxSpeed ? p.maxSpeed / sp : sp < p.minSpeed ? p.minSpeed / sp : 1;
@@ -126,6 +137,8 @@ export class Dancer {
     this.y += this.vy * dt;
     this.ax = this.ay = 0;
     this.step += this.speed * dt * 40;
+    this.svx += (this.vx - this.svx) * 0.08 * dt;
+    this.svy += (this.vy - this.svy) * 0.08 * dt;
     this.trail.push([this.x, this.y]);
     if (this.trail.length > TRAIL) this.trail.shift();
   }
@@ -133,18 +146,19 @@ export class Dancer {
 
 // Parámetros comunes que la intérprete transforma en vivo.
 export function params(st) {
-  const maxSpeed = (0.004 + 0.010 * st.tempo) * (1 + 0.6 * st.pulse);
+  // El tempo, el tap y el acento del compás (fuerte en el 1) cambian la velocidad.
+  const maxSpeed = (0.003 + 0.014 * st.tempo) * (1 + 0.5 * st.accent + 0.9 * st.pulse);
   return {
     maxSpeed,
     minSpeed: 0.55 * maxSpeed,
     // En el salón dorado los giros son más amplios; en la noche, más cerrados.
     maxForce: maxSpeed * lerp(0.14, 0.08, st.mundo),
     // Distancia de abrazo. Al soltarse (Q) la distancia deseada crece: se abren.
-    ideal: lerp(0.36, 0.08, st.abrazo) + 0.45 * st.release,
+    ideal: lerp(0.42, 0.07, st.abrazo) + 0.45 * st.release,
     perception: lerp(0.5, 1.6, st.abrazo) + 0.5 * st.release,   // hasta dónde se perciben
     // Cuánto adelanta el paso alrededor de la pareja. El signo es el sentido del giro:
     // W y A giran hacia un lado (A más cerrado), D hacia el otro; S casi no gira.
-    turn: (0.5 + 0.5 * st.pulse) * (st.fig.W + 1.7 * st.fig.A - st.fig.D),
+    turn: (0.5 + 0.25 * st.accent + 0.8 * st.pulse) * (st.fig.W + 2.2 * st.fig.A - st.fig.D),
   };
 }
 
@@ -173,7 +187,9 @@ export class Couple {
         me.flee(other, 0.9 * st.release, p);
         // S, paseo: caminan juntos en la misma dirección.
         me.align(other, 1.3 * f.S * (1 - st.release), p);
-        me.wander(0.25 + 0.8 * st.release + 0.4 * f.S, p);
+        me.wander(0.12 + 0.8 * st.release + 0.25 * f.S, p, 0.12 + 0.3 * st.release);
+        // Nunca se atraviesan: si quedan demasiado cerca, se apartan con fuerza.
+        if (Math.hypot(other.x - me.x, other.y - me.y) < 0.06) me.flee(other, 3, p);
       } else {
         me.wander(0.9, p);
       }
