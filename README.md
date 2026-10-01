@@ -37,7 +37,7 @@ Unidad 6 · Simulación · capítulo 5 de *The Nature of Code*.
 | **← / →** (sostener) | Tempo | Velocidad máxima: el vals gira más lento o más rápido |
 | **E** | Presencia de Emily | Si se va, dejan de percibirse y Victor sigue sus huellas (path following) |
 | **Tab** | Noche azul ↔ salón dorado | Paleta, y fuerza máxima de giro: en el salón, vueltas más amplias |
-| Enter / R | Música | Reproducir-pausar / volver al inicio |
+| Enter | Música | Reproducir o pausar |
 | F / H | Utilidades | Pantalla completa / mini ventana que recuerda los controles |
 
 ## El sistema
@@ -46,11 +46,12 @@ El comportamiento de los bailarines está en [js/couple.js](js/couple.js), la lu
 
 ### La luna: Physarum
 
-La superficie de la luna es un mapa de rastro de 96×96 donde viven **4000 agentes Physarum**:
+La superficie de la luna es un mapa de rastro de 96×96 donde viven **2500 agentes Physarum**:
 
 - **Qué percibe cada agente:** el rastro en tres sensores a 5 px (adelante, 0,6 rad a la izquierda y a la derecha).
 - **Cómo actúa:** gira 0,35 rad hacia el sensor con más rastro, avanza, deposita, y no puede salir del disco.
-- **El mapa:** se difunde (3×3) y se evapora (×0,9) en cada cuadro.
+- **El mapa:** se difunde (3×3) y se evapora (×0,8) en cada cuadro.
+- **Cómo se ve:** solo se pintan las venas principales (el rastro claramente por encima del promedio del disco), en claro sobre un disco oscuro.
 - **Qué emerge:** ningún agente dibuja una vena, pero juntos tejen una **red de luz** que se transforma sola. Medido: las venas brillan más de 1000 veces que los huecos entre ellas.
 - **Control:** cada tap los acelera y hace que depositen más; el brillo de la red se multiplica por ~4, así que la luna late con el compás que marca la intérprete.
 
@@ -202,6 +203,11 @@ Resultado: temblor en W de 7,4° a 1,7° y en D de 6,8° a 2,5°, con autocorrel
 - **La luna:** le agregué **Physarum**, el tercer algoritmo.
 
 **2026-09-30, deslizarse en vez de saltar.** Los bailarines saltaban demasiado con el compás y los taps. Bajé la elevación (de 7 % a 2 % en el 1 y de 18 % a 4 % en el tap) y el empuje de velocidad. El acento del compás y el impulso del tap ahora suben y bajan de forma gradual. Medido: con taps cada 1,5 s, la velocidad nunca cambia más de un 5 % de un cuadro a otro. La red de la luna quedó más visible: 4000 agentes, disco más tenue, venas más claras con un halo suave; el 37 % del disco tiene venas brillantes.
+
+**2026-09-30, en pantalla la luna era una bola blanca.** Medí los píxeles: el 98 % de la luna estaba saturado en blanco y el contraste era casi 0. La causa: el fondo se repinta con transparencia para dejar estelas, así que la luz de la luna se acumulaba cuadro tras cuadro.
+
+- **Arreglo:** el disco se limpia en cada cuadro, el halo es muy suave y solo se pintan las venas principales (las que superan el rastro promedio).
+- **Resultado:** contraste de 5 a 71 en la noche y 62 en el salón; venas en el 24 % del disco; solo el centro de las venas llega al blanco.
 
 - *(fecha)*: …
 

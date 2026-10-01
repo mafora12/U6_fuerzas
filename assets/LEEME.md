@@ -8,7 +8,6 @@ Pon tu interpretación de *Victor's Piano Solo* en esta carpeta con el nombre **
 La página la carga sola. En la presentación:
 
 - **Enter**: reproducir / pausar
-- **R**: volver al inicio
 
 Si el archivo no está, la página funciona igual y el panel (tecla **H**) muestra el aviso "Falta la música".
 

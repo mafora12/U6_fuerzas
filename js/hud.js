@@ -11,7 +11,6 @@ const CONTROLES = [
   ['E', 'Emily aparece / se va'],
   ['Tab', 'noche ↔ salón dorado'],
   ['Enter', 'música'],
-  ['R', 'reiniciar música'],
   ['F', 'pantalla completa'],
   ['H', 'mostrar / ocultar'],
 ];

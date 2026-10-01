@@ -67,19 +67,25 @@ export class Renderer {
     ctx.globalAlpha = 1;
 
     // ---- 2. Luna (o candelabro) y lluvia de luz, como en la pintura ----
+    // Ojo: el fondo se repinta con transparencia, así que lo que se dibuja sumando luz
+    // se acumula cuadro a cuadro. Por eso el halo es muy suave y el disco se limpia
+    // en cada cuadro: si no, la luna se satura en blanco y tapa la red de Physarum.
     ctx.globalCompositeOperation = 'lighter';
     const mx = W * 0.5, my = this.horizon - H * 0.21, mr = H * 0.11 * (1 + 0.06 * st.pulse);
-    const halo = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 4.5);
-    halo.addColorStop(0, rgba(pal.moon, 0.22));
+    const halo = ctx.createRadialGradient(mx, my, mr * 0.9, mx, my, mr * 4);
+    halo.addColorStop(0, rgba(pal.moon, 0.05));
     halo.addColorStop(1, rgba(pal.moon, 0));
     ctx.fillStyle = halo;
-    ctx.fillRect(mx - mr * 5, my - mr * 5, mr * 10, mr * 10);
-    const core = ctx.createRadialGradient(mx, my, 0, mx, my, mr);
-    core.addColorStop(0, rgba(pal.moon, 0.28));
-    core.addColorStop(0.8, rgba(pal.moon, 0.16));
-    core.addColorStop(1, rgba(pal.moon, 0));
-    ctx.fillStyle = core;
+    ctx.fillRect(mx - mr * 4, my - mr * 4, mr * 8, mr * 8);
+    // Disco limpio cada cuadro: un tono de luna apagado, oscuro hacia el borde.
+    ctx.globalCompositeOperation = 'source-over';
+    const dim = pal.moon.map((c, i) => Math.round(c * 0.22 + pal.skyLow[i] * 0.25));
+    const disc = ctx.createRadialGradient(mx - mr * 0.25, my - mr * 0.25, 0, mx, my, mr);
+    disc.addColorStop(0, rgba(dim.map((c) => Math.min(255, c * 1.35)), 1));
+    disc.addColorStop(1, rgba(dim.map((c) => c * 0.75), 1));
+    ctx.fillStyle = disc;
     ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'lighter';
     // La red de Physarum sobre la luna; late con cada tap.
     const dt60 = this.lastT === null ? 1 : Math.min(3, (t - this.lastT) * 60);
     this.lastT = t;

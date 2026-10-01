@@ -46,9 +46,6 @@ export function initControls({ audio, hud, onStart }) {
           audio.pause();
         }
         break;
-      case 'KeyR':
-        audio.currentTime = 0;
-        break;
       case 'KeyF':
         if (document.fullscreenElement) document.exitFullscreen();
         else document.documentElement.requestFullscreen().catch(() => {});
