@@ -75,8 +75,8 @@ export class Renderer {
     ctx.fillStyle = halo;
     ctx.fillRect(mx - mr * 5, my - mr * 5, mr * 10, mr * 10);
     const core = ctx.createRadialGradient(mx, my, 0, mx, my, mr);
-    core.addColorStop(0, rgba(pal.moon, 0.5));
-    core.addColorStop(0.8, rgba(pal.moon, 0.3));
+    core.addColorStop(0, rgba(pal.moon, 0.28));
+    core.addColorStop(0.8, rgba(pal.moon, 0.16));
     core.addColorStop(1, rgba(pal.moon, 0));
     ctx.fillStyle = core;
     ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
@@ -157,8 +157,8 @@ export class Renderer {
     const { ctx } = this;
     const [sx, sy] = this.toScreen(d.x, d.y);
     const s = this.depth(d.y);
-    // Suben en el 1 del compás y bajan en el 2 y el 3 (rise & fall del vals); el tap los eleva más.
-    const h = this.H * 0.34 * s * (1 + 0.07 * st.accent + 0.18 * st.pulse);
+    // Apenas se elevan en el 1 del compás (un rise & fall suave): se deslizan, no saltan.
+    const h = this.H * 0.34 * s * (1 + 0.02 * st.accent + 0.04 * st.pulse);
     const vxs = d.svx * this.rx;                      // velocidad suavizada: el cuerpo no parpadea
     const lean = clamp(vxs * 0.035, -0.14, 0.14) * h;  // se inclina hacia donde va
     const sway = -clamp(vxs * 0.06, -0.3, 0.3) * h;    // la falda queda atrás

@@ -1,12 +1,12 @@
 // LA LUNA CON PHYSARUM.
-// La superficie de la luna es un mapa de rastro de 96×96. Sobre él viven 2500 agentes
+// La superficie de la luna es un mapa de rastro de 96×96. Sobre él viven 4000 agentes
 // Physarum: cada uno huele el rastro con tres sensores (adelante, izquierda, derecha),
 // gira hacia donde hay más, avanza y deposita. Juntos tejen una red de venas de luz
 // que crece y se transforma sola. No pueden salir del disco de la luna.
 // Cada tap (el "1" del compás) los acelera y hace que depositen más: la luna late.
 
 const R = 96;          // resolución del mapa
-const N = 2500;        // agentes
+const N = 4000;        // agentes
 const SA = 0.6;        // ángulo de los sensores laterales
 const SO = 5;          // distancia de los sensores
 const RA = 0.35;       // cuánto giran
@@ -79,15 +79,23 @@ export class MoonSlime {
   // Pinta la red y la dibuja sobre la luna (centro x, y; radio r).
   draw(ctx, x, y, r, color) {
     const d = this.img.data, tr = this.trail, m = this.mask;
+    // Venas más claras que el disco (mezcla con blanco) y con una curva de brillo fuerte.
+    const cr = (color[0] + 255 * 1.5) / 2.5, cg = (color[1] + 255 * 1.5) / 2.5, cb = (color[2] + 255 * 1.5) / 2.5;
     for (let i = 0; i < R * R; i++) {
-      const v = (tr[i] / (tr[i] + 3)) * m[i];
+      const v = Math.min(1, (tr[i] / (tr[i] + 1.2)) * 1.25) * m[i];
       const p = i * 4;
-      d[p] = color[0]; d[p + 1] = color[1]; d[p + 2] = color[2];
+      d[p] = cr; d[p + 1] = cg; d[p + 2] = cb;
       d[p + 3] = v * 255;
     }
     this.ctx.putImageData(this.img, 0, 0);
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
+    // Un halo suave detrás de las venas y luego las venas nítidas.
+    ctx.globalAlpha = 0.45;
+    ctx.filter = 'blur(3px)';
+    ctx.drawImage(this.canvas, x - r, y - r, r * 2, r * 2);
+    ctx.filter = 'none';
+    ctx.globalAlpha = 1;
     ctx.drawImage(this.canvas, x - r, y - r, r * 2, r * 2);
     ctx.restore();
   }

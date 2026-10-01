@@ -7,7 +7,8 @@ export const state = {
   emilyTarget: 0,     // E
   mundo: 0,           // 0 = noche azul · 1 = salón dorado
   mundoTarget: 0,     // Tab
-  pulse: 0,           // impulso del último "1" del compás (Espacio), decae solo
+  pulse: 0,           // impulso del último "1" del compás (Espacio), sube suave y decae
+  pulseTarget: 0,
   release: 0,         // 0 = abrazados · 1 = sueltos (mientras se sostiene Q)
   releaseHeld: false,
   taps: [],
@@ -33,13 +34,16 @@ export const FIGURAS = {
 export function easeState(dt) {
   state.emily += (state.emilyTarget - state.emily) * (1 - Math.exp(-dt * 0.6));
   state.mundo += (state.mundoTarget - state.mundo) * (1 - Math.exp(-dt * 0.35));
-  state.pulse *= Math.exp(-dt * 1.8);
+  // El impulso del tap sube suave y luego se apaga: un empuje, no un salto.
+  state.pulse += (state.pulseTarget - state.pulse) * (1 - Math.exp(-dt * 8));
+  state.pulseTarget *= Math.exp(-dt * 2.5);
   state.release += ((state.releaseHeld ? 1 : 0) - state.release) * (1 - Math.exp(-dt * 2));
   // El compás avanza al tempo marcado; el acento del 3/4 es fuerte en el 1.
   if (state.measure > 0) {
     state.phase = (state.phase + dt / state.measure) % 1;
-    const bump = (x) => { x = ((x % 1) + 1.5) % 1 - 0.5; return Math.exp(-((x / 0.07) ** 2)); };
-    state.accent = bump(state.phase) + 0.35 * bump(state.phase - 1 / 3) + 0.35 * bump(state.phase - 2 / 3);
+    const bump = (x) => { x = ((x % 1) + 1.5) % 1 - 0.5; return Math.exp(-((x / 0.14) ** 2)); };
+    const target = bump(state.phase) + 0.3 * bump(state.phase - 1 / 3) + 0.3 * bump(state.phase - 2 / 3);
+    state.accent += (target - state.accent) * (1 - Math.exp(-dt * 6));   // sin golpes: se desliza
   }
   // De una figura a otra en un par de segundos, sin saltos.
   const k = 1 - Math.exp(-dt * 1.2);
@@ -50,7 +54,7 @@ export function easeState(dt) {
 
 // Un tap = el "1" de un compás de vals (3/4).
 export function tap(now) {
-  state.pulse = Math.min(state.pulse + 1, 1.6);
+  state.pulseTarget = 1;
   state.tapAt = now;
   state.phase = 0;    // cada tap es el "1": vuelve a sincronizar el compás
   const taps = state.taps;

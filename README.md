@@ -32,7 +32,7 @@ Unidad 6 · Simulación · capítulo 5 de *The Nature of Code*.
 | **S** | Figura: paseo lado a lado | Dejan de girar y caminan juntos copiando la dirección del otro (alignment) |
 | **D** | Figura: vals al revés | Giran hacia el otro lado y recorren el salón en sentido contrario |
 | **Q** (sostener) | Soltarse | Se alejan (flee), crece la distancia deseada y cada uno deambula solo. Al soltar Q se buscan y se vuelven a abrazar |
-| **Espacio** (tap) | El “1” del compás de 3/4 | Una vuelta más fuerte, los bailarines se elevan, una onda de luz en el piso y la luna late. Desde el segundo tap el compás sigue al tempo marcado: suben y aceleran en el 1, bajan en el 2 y el 3 |
+| **Espacio** (tap) | El “1” del compás de 3/4 | Un empuje suave en la vuelta, una onda de luz en el piso y la luna late. Desde el segundo tap el compás sigue al tempo marcado: en el 1 se deslizan un poco más rápido y se elevan apenas (*rise & fall* suave) |
 | **↑ / ↓** (sostener) | Abrazo | Distancia de abrazo (0,36 → 0,08) y radio de percepción (0,5 → 1,6) |
 | **← / →** (sostener) | Tempo | Velocidad máxima: el vals gira más lento o más rápido |
 | **E** | Presencia de Emily | Si se va, dejan de percibirse y Victor sigue sus huellas (path following) |
@@ -46,7 +46,7 @@ El comportamiento de los bailarines está en [js/couple.js](js/couple.js), la lu
 
 ### La luna: Physarum
 
-La superficie de la luna es un mapa de rastro de 96×96 donde viven **2500 agentes Physarum**:
+La superficie de la luna es un mapa de rastro de 96×96 donde viven **4000 agentes Physarum**:
 
 - **Qué percibe cada agente:** el rastro en tres sensores a 5 px (adelante, 0,6 rad a la izquierda y a la derecha).
 - **Cómo actúa:** gira 0,35 rad hacia el sensor con más rastro, avanza, deposita, y no puede salir del disco.
@@ -200,6 +200,8 @@ Resultado: temblor en W de 7,4° a 1,7° y en D de 6,8° a 2,5°, con autocorrel
 - **Cambios más notorios:** amplié los rangos de tempo (0,003–0,017) y abrazo (0,42–0,07) y el efecto del tap (+90 % de velocidad, elevación, onda de luz en el piso).
 - **Luz del aire:** la hice más visible (opacidad 0,10–0,26).
 - **La luna:** le agregué **Physarum**, el tercer algoritmo.
+
+**2026-09-30, deslizarse en vez de saltar.** Los bailarines saltaban demasiado con el compás y los taps. Bajé la elevación (de 7 % a 2 % en el 1 y de 18 % a 4 % en el tap) y el empuje de velocidad. El acento del compás y el impulso del tap ahora suben y bajan de forma gradual. Medido: con taps cada 1,5 s, la velocidad nunca cambia más de un 5 % de un cuadro a otro. La red de la luna quedó más visible: 4000 agentes, disco más tenue, venas más claras con un halo suave; el 37 % del disco tiene venas brillantes.
 
 - *(fecha)*: …
 

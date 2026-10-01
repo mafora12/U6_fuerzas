@@ -147,7 +147,7 @@ export class Dancer {
 // Parámetros comunes que la intérprete transforma en vivo.
 export function params(st) {
   // El tempo, el tap y el acento del compás (fuerte en el 1) cambian la velocidad.
-  const maxSpeed = (0.003 + 0.014 * st.tempo) * (1 + 0.5 * st.accent + 0.9 * st.pulse);
+  const maxSpeed = (0.003 + 0.014 * st.tempo) * (1 + 0.2 * st.accent + 0.35 * st.pulse);
   return {
     maxSpeed,
     minSpeed: 0.55 * maxSpeed,
@@ -158,7 +158,7 @@ export function params(st) {
     perception: lerp(0.5, 1.6, st.abrazo) + 0.5 * st.release,   // hasta dónde se perciben
     // Cuánto adelanta el paso alrededor de la pareja. El signo es el sentido del giro:
     // W y A giran hacia un lado (A más cerrado), D hacia el otro; S casi no gira.
-    turn: (0.5 + 0.25 * st.accent + 0.8 * st.pulse) * (st.fig.W + 2.2 * st.fig.A - st.fig.D),
+    turn: (0.5 + 0.12 * st.accent + 0.4 * st.pulse) * (st.fig.W + 2.2 * st.fig.A - st.fig.D),
   };
 }
 
