@@ -1,18 +1,29 @@
-import { state, tap } from './state.js';
+import { state, tap, FIGURAS } from './state.js';
 
-// Teclas que se sostienen: flechas, WASD (mover la luz) y Q (soltarse).
-const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ'];
+// Teclas que se sostienen: flechas (abrazo, tempo) y Q (soltarse).
+const HELD = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyQ'];
+const FIG_KEYS = { KeyW: 'W', KeyA: 'A', KeyS: 'S', KeyD: 'D' };
 const held = new Set();
 
-export function initControls({ toWorld, audio, hud, onStart }) {
+export function initControls({ audio, hud, onStart }) {
   addEventListener('keydown', (e) => {
     onStart();
-    if (ARROWS.includes(e.code)) {
+    if (HELD.includes(e.code)) {
       held.add(e.code);
       e.preventDefault();
       return;
     }
     if (e.repeat) return;
+
+    // W A S D: elegir figura de baile.
+    if (FIG_KEYS[e.code]) {
+      const f = FIG_KEYS[e.code];
+      if (state.figura !== f) {
+        state.figura = f;
+        hud.notify(FIGURAS[f], 2);
+      }
+      return;
+    }
 
     switch (e.code) {
       case 'Space':
@@ -50,15 +61,6 @@ export function initControls({ toWorld, audio, hud, onStart }) {
 
   addEventListener('keyup', (e) => held.delete(e.code));
   addEventListener('blur', () => held.clear());
-
-  // El mouse mueve la luz del salón (se proyecta sobre el piso).
-  addEventListener('pointermove', (e) => {
-    let [x, y] = toWorld(e.clientX, e.clientY);
-    const r = Math.hypot(x, y);
-    if (r > 0.7) { x *= 0.7 / r; y *= 0.7 / r; }
-    state.lightTarget.x = x;
-    state.lightTarget.y = y;
-  });
   addEventListener('pointerdown', onStart);
 }
 
@@ -70,16 +72,6 @@ export function updateHeld(dt) {
   if (held.has('ArrowDown')) state.abrazo = clamp(state.abrazo - r);
   if (held.has('ArrowRight')) state.tempo = clamp(state.tempo + r);
   if (held.has('ArrowLeft')) state.tempo = clamp(state.tempo - r);
-
-  // WASD: la luz recorre el salón y la pareja la sigue bailando.
-  const m = 0.55 * dt;
-  const L = state.lightTarget;
-  if (held.has('KeyW')) L.y -= m;
-  if (held.has('KeyS')) L.y += m;
-  if (held.has('KeyA')) L.x -= m;
-  if (held.has('KeyD')) L.x += m;
-  const lr = Math.hypot(L.x, L.y);
-  if (lr > 0.7) { L.x *= 0.7 / lr; L.y *= 0.7 / lr; }
 
   // Q sostenida: se sueltan. Al soltar la tecla, vuelven a buscarse.
   state.releaseHeld = held.has('KeyQ');

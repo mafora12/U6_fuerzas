@@ -100,8 +100,8 @@ export class Renderer {
     }
     ctx.drawImage(this.paint, 0, 0, W, H);
 
-    // ---- 4. La luz del salón (el mouse) sobre el piso ----
-    const [lx, ly] = this.toScreen(st.light.x, st.light.y);
+    // ---- 4. Un foco suave sobre el piso que acompaña a la pareja (solo decoración) ----
+    const [lx, ly] = this.toScreen((v.x + e.x * ea) / (1 + ea), (v.y + e.y * ea) / (1 + ea));
     ctx.save();
     ctx.translate(lx, ly);
     ctx.scale(1, this.ry / this.rx);

@@ -21,7 +21,7 @@ function onStart() {
   inicio.classList.add('fuera');
 }
 
-initControls({ toWorld: (x, y) => renderer.toWorld(x, y), audio, hud, onStart });
+initControls({ audio, hud, onStart });
 
 // La simulación avanza a 60 pasos por segundo sin importar la pantalla.
 const STEP = 1 / 60;

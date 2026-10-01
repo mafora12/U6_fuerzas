@@ -65,6 +65,22 @@ export class Dancer {
     this.seek(tx, ty, w, p);
   }
 
+  // ALIGNMENT: ir en la misma dirección que el otro (copiar su velocidad).
+  align(o, w, p) {
+    if (w <= 0) return;
+    const sp = Math.hypot(o.vx, o.vy);
+    if (sp < 1e-6) return;
+    this.steer((o.vx / sp) * p.maxSpeed, (o.vy / sp) * p.maxSpeed, w, p);
+  }
+
+  // LÍNEA DE BAILE: buscar un punto un poco más adelante sobre el anillo del salón.
+  // dir = +1 recorre el salón en un sentido, −1 en el contrario.
+  lineOfDance(dir, w, p) {
+    if (w <= 0) return;
+    const a = Math.atan2(this.y, this.x) + 0.35 * dir;
+    this.seek(Math.cos(a) * 0.5, Math.sin(a) * 0.5, w, p);
+  }
+
   // ARRIVE a una distancia: acercarse si está lejos del abrazo, alejarse si está muy cerca,
   // frenando a medida que llega a la distancia ideal.
   keepDistance(o, ideal, w, p) {
@@ -126,7 +142,9 @@ export function params(st) {
     // Distancia de abrazo. Al soltarse (Q) la distancia deseada crece: se abren.
     ideal: lerp(0.36, 0.08, st.abrazo) + 0.45 * st.release,
     perception: lerp(0.5, 1.6, st.abrazo) + 0.5 * st.release,   // hasta dónde se perciben
-    turn: 0.5 + 0.5 * st.pulse,                // cuánto adelanta el paso alrededor de la pareja
+    // Cuánto adelanta el paso alrededor de la pareja. El signo es el sentido del giro:
+    // W y A giran hacia un lado (A más cerrado), D hacia el otro; S casi no gira.
+    turn: (0.5 + 0.5 * st.pulse) * (st.fig.W + 1.7 * st.fig.A - st.fig.D),
   };
 }
 
@@ -145,21 +163,23 @@ export class Couple {
     // Percepción limitada: solo se perciben dentro de p.perception, y solo si Emily está.
     v.sees = e.sees = st.emily > 0.3 && d < p.perception;
 
+    const f = st.fig;   // peso de cada figura (W, A, S, D); cambian suavemente
     for (const [me, other, presence] of [[v, e, 1], [e, v, st.emily]]) {
       me.target = null;
       if (me.sees) {
         // Abrazados giran juntos; sueltos (Q) se alejan y cada uno baila solo.
-        me.turnWith(other, p.ideal, p.turn, 1.4 * (1 - st.release), p);
+        me.turnWith(other, p.ideal, p.turn, 1.4 * (1 - st.release) * (1 - f.S), p);
         me.keepDistance(other, p.ideal, 0.8 + 0.6 * st.release, p);
         me.flee(other, 0.9 * st.release, p);
-        me.wander(0.25 + 0.8 * st.release, p);
+        // S, paseo: caminan juntos en la misma dirección.
+        me.align(other, 1.3 * f.S * (1 - st.release), p);
+        me.wander(0.25 + 0.8 * st.release + 0.4 * f.S, p);
       } else {
         me.wander(0.9, p);
       }
-      // La luz (mouse) los atrae suavemente: así la intérprete los lleva por el salón.
-      // Más lejos la luz, más fuerte el llamado: así cruzan el salón sin dejar de bailar.
-      const lightD = Math.hypot(st.light.x - me.x, st.light.y - me.y);
-      me.seek(st.light.x, st.light.y, (0.5 + 1.2 * Math.min(1, lightD / 0.5)) * presence, p);
+      // W y D: recorren el salón por la línea de baile, en sentidos contrarios.
+      me.lineOfDance(1, 0.9 * f.W * presence, p);
+      me.lineOfDance(-1, 0.9 * f.D * presence, p);
       // Paredes del salón.
       const r = Math.hypot(me.x, me.y);
       if (r > 0.8) me.seek(0, 0, (r - 0.8) * 12, p);

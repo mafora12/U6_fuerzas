@@ -12,8 +12,16 @@ export const state = {
   releaseHeld: false,
   taps: [],
   compases: 0,
-  light: { x: 0, y: 0 },        // la luz del salón (sigue al mouse con retraso)
-  lightTarget: { x: 0, y: 0 },
+  // Figura de baile (W A S D). fig guarda cuánto pesa cada una: cambian suavemente.
+  figura: 'W',
+  fig: { W: 1, A: 0, S: 0, D: 0 },
+};
+
+export const FIGURAS = {
+  W: 'Vals por el salón',
+  A: 'Vuelta en el sitio',
+  S: 'Paseo lado a lado',
+  D: 'Vals al revés',
 };
 
 export function easeState(dt) {
@@ -21,9 +29,11 @@ export function easeState(dt) {
   state.mundo += (state.mundoTarget - state.mundo) * (1 - Math.exp(-dt * 0.35));
   state.pulse *= Math.exp(-dt * 1.8);
   state.release += ((state.releaseHeld ? 1 : 0) - state.release) * (1 - Math.exp(-dt * 2));
+  // De una figura a otra en un par de segundos, sin saltos.
   const k = 1 - Math.exp(-dt * 1.2);
-  state.light.x += (state.lightTarget.x - state.light.x) * k;
-  state.light.y += (state.lightTarget.y - state.light.y) * k;
+  for (const key in state.fig) {
+    state.fig[key] += ((state.figura === key ? 1 : 0) - state.fig[key]) * k;
+  }
 }
 
 // Un tap = el "1" de un compás de vals (3/4).

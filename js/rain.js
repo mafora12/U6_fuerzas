@@ -1,14 +1,16 @@
 import { rgba } from './palette.js';
 
-// LLUVIA CON FLOW FIELD.
-// El campo es una rejilla de direcciones sobre la pantalla: casi todas apuntan hacia abajo,
-// pero el ruido las tuerce y cambia con el tiempo. Cada gota es un agente que solo mira
-// la flecha de la celda donde está y gira hacia ella (steering de Reynolds).
-// El campo guarda direcciones; la regla con la que la gota lo sigue está en update().
+// LUZ EN EL AIRE CON FLOW FIELD.
+// El campo es una rejilla de direcciones sobre la pantalla. Un ruido suave que cambia
+// con el tiempo decide cada dirección, en cualquier sentido: el campo forma remolinos.
+// Cada partícula es un agente que solo mira la flecha de la celda donde está y gira
+// hacia ella (steering de Reynolds), con una caída muy leve, como polvo de luz.
+// El campo guarda direcciones; la regla con la que la partícula lo sigue está en update().
 
 const CELL = 40;            // tamaño de cada celda del campo, en píxeles
-const TURB = 1.4;           // cuánto puede torcerse la dirección (radianes)
-const DROPS = 140;
+const SCALE = 0.09;         // tamaño de los remolinos (más pequeño = remolinos más grandes)
+const DROPS = 180;
+const FALL = 0.04;          // caída leve, además del campo
 
 // Ruido suave 3D (value noise): valores entre 0 y 1 que cambian poco a poco.
 function hash(x, y, z) {
@@ -42,35 +44,42 @@ export class Rain {
     this.cols = Math.ceil(W / CELL) + 1;
     this.rows = Math.ceil(H / CELL) + 1;
     this.angle = new Float32Array(this.cols * this.rows);
-    this.drops = Array.from({ length: DROPS }, () => this._newDrop(Math.random() * H));
+    this.drops = Array.from({ length: DROPS }, () => {
+      const d = this._newDrop();
+      d.age = Math.random() * d.life;   // que no aparezcan todas a la vez
+      return d;
+    });
   }
 
-  _newDrop(y) {
-    const speed = 2 + Math.random() * 3;
+  // Nace en un punto al azar de la pantalla: así la luz queda dispersa.
+  _newDrop() {
     return {
-      x: Math.random() * this.W, y,
-      vx: 0, vy: speed,
-      speed,                                  // velocidad máxima de esta gota
-      len: 3 + Math.random() * 6,             // largo de la pincelada
-      w: 1 + Math.random() * 2.5,
-      a: 0.05 + Math.random() * 0.13,
+      x: Math.random() * this.W,
+      y: Math.random() * this.H,
+      vx: 0, vy: 0,
+      speed: 0.3 + Math.random() * 0.9,     // velocidad máxima: lenta, flota
+      len: 4 + Math.random() * 8,           // largo de la estela
+      w: 0.6 + Math.random() * 0.9,
+      a: 0.03 + Math.random() * 0.07,       // muy tenue
+      age: 0,
+      life: 3 + Math.random() * 5,          // segundos de vida
     };
   }
 
-  // El campo: dirección de cada celda = hacia abajo + torsión por ruido que evoluciona.
+  // El campo: cada celda apunta en la dirección que dicta el ruido (cualquier ángulo).
   _updateField(t) {
     const { cols, rows, angle } = this;
     for (let j = 0; j < rows; j++) {
       for (let i = 0; i < cols; i++) {
-        const n = noise3(i * 0.18, j * 0.18, t * 0.25);
-        angle[i + j * cols] = Math.PI / 2 + (n - 0.5) * 2 * TURB;
+        angle[i + j * cols] = noise3(i * SCALE, j * SCALE, t * 0.12) * Math.PI * 4;
       }
     }
   }
 
   update(W, H, t) {
     if (W !== this.W || H !== this.H) this._resize(W, H);
-    const dt60 = this.lastT === null ? 1 : Math.min(3, (t - this.lastT) * 60);
+    const dtSec = this.lastT === null ? 1 / 60 : Math.min(0.05, t - this.lastT);
+    const dt60 = dtSec * 60;
     this.lastT = t;
     this._updateField(t);
 
@@ -83,29 +92,34 @@ export class Rain {
       // Velocidad deseada = dirección del campo × su velocidad; steering = deseada − actual.
       let sx = Math.cos(a) * d.speed - d.vx;
       let sy = Math.sin(a) * d.speed - d.vy;
-      const f = Math.hypot(sx, sy), maxF = 0.12;
+      const f = Math.hypot(sx, sy), maxF = 0.03;
       if (f > maxF) { sx *= maxF / f; sy *= maxF / f; }
       d.vx += sx * dt60;
-      d.vy += sy * dt60;
+      d.vy += (sy + FALL * 0.1) * dt60;
       d.x += d.vx * dt60;
-      d.y += d.vy * dt60;
-      // Al salir de la pantalla vuelve a caer desde arriba.
-      if (d.y > H + 20) Object.assign(d, this._newDrop(-20));
-      if (d.x < -20) d.x = W + 20;
-      else if (d.x > W + 20) d.x = -20;
+      d.y += (d.vy + FALL) * dt60;
+      d.age += dtSec;
+      // Al terminar su vida o salir de la pantalla, renace en otro lugar.
+      if (d.age > d.life || d.x < -30 || d.x > W + 30 || d.y < -30 || d.y > H + 30) {
+        Object.assign(d, this._newDrop());
+      }
     }
   }
 
   draw(ctx, pal, horizon) {
     ctx.lineCap = 'round';
     for (const d of this.drops) {
-      // Sobre el piso la lluvia se ve más tenue.
-      const fade = d.y < horizon ? 1 : Math.max(0.25, 1 - (d.y - horizon) / 300);
-      ctx.strokeStyle = rgba(pal.streak, d.a * fade);
+      // Aparece y se desvanece suavemente a lo largo de su vida.
+      const life = Math.sin(Math.PI * Math.min(1, d.age / d.life));
+      // Sobre el piso se ve aún más tenue.
+      const fade = d.y < horizon ? 1 : Math.max(0.2, 1 - (d.y - horizon) / 300);
+      const alpha = d.a * life * fade;
+      if (alpha < 0.004) continue;
+      ctx.strokeStyle = rgba(pal.streak, alpha);
       ctx.lineWidth = d.w;
       ctx.beginPath();
       ctx.moveTo(d.x, d.y);
-      ctx.lineTo(d.x - d.vx * d.len, d.y - d.vy * d.len);
+      ctx.lineTo(d.x - d.vx * d.len, d.y - (d.vy + FALL) * d.len);
       ctx.stroke();
     }
   }
